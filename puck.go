@@ -14,8 +14,8 @@ const (
 const timeStep float64 = .001
 
 type Puck struct {
-	velocity *mat.VecDense
 	position *mat.VecDense
+	velocity *mat.VecDense
 }
 
 func (p *Puck) UpdatePosition(timestep float64) {

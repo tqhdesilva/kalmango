@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"math/rand"
 
 	"gonum.org/v1/gonum/mat"
@@ -8,9 +9,10 @@ import (
 
 type Screen struct {
 	*Puck
-	ScreenWidth             float64
-	ScreenHeight            float64
-	positionNoiseCovariance mat.Matrix
+	ScreenWidth   float64
+	ScreenHeight  float64
+	positionNoise BivariateGaussian
+	velocityNoise BivariateGaussian
 }
 
 func (s *Screen) Run() {
@@ -36,12 +38,24 @@ func (s *Screen) Run() {
 	}
 }
 
-func (s *Screen) GetNoisyPosition() mat.Vector {
-
+func (s *Screen) GetNoisyPosition() mat.VecDense {
+	noise, err := s.positionNoise.Sample()
+	if err != nil {
+		log.Fatal("error generating position noise")
+	}
+	var receiver mat.VecDense
+	receiver.AddVec(s.Puck.position, noise)
+	return receiver
 }
 
-func (s *Screen) GetNoisyVelocity() mat.Vector {
-
+func (s *Screen) GetNoisyVelocity() mat.VecDense {
+	noise, err := s.velocityNoise.Sample()
+	if err != nil {
+		log.Fatal("error generating position noise")
+	}
+	var receiver mat.VecDense
+	receiver.AddVec(s.Puck.velocity, noise)
+	return receiver
 }
 
 //NewScreen is a factory for Screen objects
