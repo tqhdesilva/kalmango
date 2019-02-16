@@ -13,30 +13,33 @@ type Screen struct {
 	ScreenHeight float64
 }
 
-const sleepDuration time.Duration = 1000
+const tickDuration time.Duration = 100 * time.Millisecond
+const timeStep float64 = .1
 
 func (s *Screen) Run() {
+	tick := time.Tick(tickDuration)
 	for {
-		// check for collisions
-		x := s.Puck.position.AtVec(0)
-		y := s.Puck.position.AtVec(1)
-		switch {
-		case x >= s.ScreenWidth:
-			s.Puck.EdgeCollide(Right)
-		case x <= float64(0):
-			s.Puck.EdgeCollide(Left)
+		select {
+		case <-tick:
+			x := s.Puck.position.AtVec(0)
+			y := s.Puck.position.AtVec(1)
+			switch {
+			case x >= s.ScreenWidth:
+				s.Puck.EdgeCollide(Right)
+			case x <= float64(0):
+				s.Puck.EdgeCollide(Left)
+			}
+
+			switch {
+			case y >= s.ScreenHeight:
+				s.Puck.EdgeCollide(Bottom)
+			case y <= float64(0):
+				s.Puck.EdgeCollide(Top)
+			}
+
+			s.Puck.UpdatePosition(timeStep)
+
 		}
-
-		switch {
-		case y >= s.ScreenHeight:
-			s.Puck.EdgeCollide(Bottom)
-		case y <= float64(0):
-			s.Puck.EdgeCollide(Top)
-		}
-
-		s.Puck.UpdatePosition(timeStep)
-
-		time.Sleep(sleepDuration)
 	}
 }
 

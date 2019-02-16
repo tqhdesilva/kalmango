@@ -15,8 +15,6 @@ const (
 	Left
 )
 
-const timeStep float64 = .001
-
 type Puck struct {
 	position      *mat.VecDense
 	velocity      *mat.VecDense
