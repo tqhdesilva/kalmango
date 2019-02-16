@@ -1,7 +1,10 @@
 package main
 
+import "time"
+
 func main() {
 	var screen *Screen
 	screen = NewScreen(10, 10)
-	go screen.Run()
+	c := make(chan time.Time)
+	go screen.Run(.1, c)
 }

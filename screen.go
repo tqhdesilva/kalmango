@@ -13,14 +13,15 @@ type Screen struct {
 	ScreenHeight float64
 }
 
-const tickDuration time.Duration = 100 * time.Millisecond
-const timeStep float64 = .1
+// const tickDuration time.Duration = 100 * time.Millisecond
+// const timeStep float64 = .1
 
-func (s *Screen) Run() {
+func (s *Screen) Run(timeStep float64, c chan time.Time) {
+	var tickDuration time.Duration = time.Duration(timeStep*1000) * time.Millisecond
 	tick := time.Tick(tickDuration)
 	for {
 		select {
-		case <-tick:
+		case timeStamp := <-tick:
 			x := s.Puck.position.AtVec(0)
 			y := s.Puck.position.AtVec(1)
 			switch {
@@ -38,7 +39,7 @@ func (s *Screen) Run() {
 			}
 
 			s.Puck.UpdatePosition(timeStep)
-
+			c <- timeStamp
 		}
 	}
 }

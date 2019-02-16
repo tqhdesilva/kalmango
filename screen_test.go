@@ -18,13 +18,14 @@ func TestNewScreen(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
+	//sometimes this breaks, race condition
 	screen := NewScreen(10.0, 10.0)
 	startPosition := screen.Puck.position
 	expectedPosition := mat.VecDense{}
 	expectedPosition.AddVec(mat.NewVecDense(2, []float64{.1, .1}), startPosition)
-	go screen.Run()
-	time.Sleep(110 * time.Millisecond)
-	//sometimes this breaks, race condition
+	c := make(chan time.Time)
+	go screen.Run(.1, c)
+	<-c
 	if !mat.Equal(screen.Puck.position, &expectedPosition) {
 		t.Errorf("Position was incorrect, got: %+v, expected: %+v", screen.Puck.position, &expectedPosition)
 	}
