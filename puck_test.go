@@ -7,25 +7,50 @@ import (
 )
 
 func TestUpdatePosition(t *testing.T) {
-	testPuck := Puck{
-		mat.NewVecDense(2, []float64{0.0, 0.0}),
-		mat.NewVecDense(2, []float64{1.0, 2.0})}
-	testPuck.UpdatePosition(2.0)
-	expectedPosition := mat.NewVecDense(2, []float64{2.0, 4.0})
-	if !mat.Equal(
-		testPuck.position, expectedPosition) {
-		t.Errorf(
-			"Position is wrong, got: %+v, expected: %+v",
-			testPuck.position,
-			expectedPosition,
-		)
+	tables := []struct {
+		startPosition *mat.VecDense
+		velocity      *mat.VecDense
+		endPosition   *mat.VecDense
+		timestep      float64
+	}{
+		{
+			mat.NewVecDense(2, []float64{0.0, 0.0}),
+			mat.NewVecDense(2, []float64{1.0, 2.0}),
+			mat.NewVecDense(2, []float64{2.0, 4.0}),
+			2.0,
+		},
+		{
+			mat.NewVecDense(2, []float64{-1.0, 3.0}),
+			mat.NewVecDense(2, []float64{1.0, 0.0}),
+			mat.NewVecDense(2, []float64{0.0, 3.0}),
+			1.0,
+		},
+	}
+	for _, table := range tables {
+		testPuck := Puck{
+			table.startPosition,
+			table.velocity,
+			&BivariateGaussian{},
+			&BivariateGaussian{},
+		}
+		testPuck.UpdatePosition(table.timestep)
+		if !mat.Equal(testPuck.position, table.endPosition) {
+			t.Errorf(
+				"Position is wrong, got: %+v, expected: %+v",
+				testPuck.position,
+				table.endPosition,
+			)
+		}
 	}
 }
 
 func TestEdgeCollide(t *testing.T) {
 	testPuck := Puck{
 		mat.NewVecDense(2, []float64{0.0, 0.0}),
-		mat.NewVecDense(2, []float64{1.0, 1.0})}
+		mat.NewVecDense(2, []float64{1.0, 1.0}),
+		&BivariateGaussian{},
+		&BivariateGaussian{},
+	}
 	testPuck.EdgeCollide(Top)
 	expectedVelocity := mat.NewVecDense(2, []float64{1.0, -1.0})
 	if !mat.Equal(testPuck.velocity, expectedVelocity) {
@@ -35,4 +60,12 @@ func TestEdgeCollide(t *testing.T) {
 			expectedVelocity,
 		)
 	}
+}
+
+func TestGetNoisyPosition(t *testing.T) {
+
+}
+
+func TestGetNoisyVelocity(t *testing.T) {
+
 }

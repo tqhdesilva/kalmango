@@ -1,6 +1,10 @@
 package main
 
-import "gonum.org/v1/gonum/mat"
+import (
+	"log"
+
+	"gonum.org/v1/gonum/mat"
+)
 
 type Edge int
 
@@ -14,8 +18,10 @@ const (
 const timeStep float64 = .001
 
 type Puck struct {
-	position *mat.VecDense
-	velocity *mat.VecDense
+	position      *mat.VecDense
+	velocity      *mat.VecDense
+	positionNoise *BivariateGaussian
+	velocityNoise *BivariateGaussian
 }
 
 func (p *Puck) UpdatePosition(timestep float64) {
@@ -35,4 +41,24 @@ func (p *Puck) EdgeCollide(e Edge) {
 	default:
 		p.velocity.ScaleVec(-1, p.velocity)
 	}
+}
+
+func (p *Puck) GetNoisyPosition() mat.VecDense {
+	noise, err := p.positionNoise.Sample()
+	if err != nil {
+		log.Fatal("error generating position noise")
+	}
+	var receiver mat.VecDense
+	receiver.AddVec(p.position, noise)
+	return receiver
+}
+
+func (p *Puck) GetNoisyVelocity() mat.VecDense {
+	noise, err := p.velocityNoise.Sample()
+	if err != nil {
+		log.Fatal("error generating position noise")
+	}
+	var receiver mat.VecDense
+	receiver.AddVec(p.velocity, noise)
+	return receiver
 }

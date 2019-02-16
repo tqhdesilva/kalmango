@@ -1,19 +1,19 @@
 package main
 
 import (
-	"log"
 	"math/rand"
+	"time"
 
 	"gonum.org/v1/gonum/mat"
 )
 
 type Screen struct {
 	*Puck
-	ScreenWidth   float64
-	ScreenHeight  float64
-	positionNoise BivariateGaussian
-	velocityNoise BivariateGaussian
+	ScreenWidth  float64
+	ScreenHeight float64
 }
+
+const sleepDuration time.Duration = 1000
 
 func (s *Screen) Run() {
 	for {
@@ -35,27 +35,9 @@ func (s *Screen) Run() {
 		}
 
 		s.Puck.UpdatePosition(timeStep)
-	}
-}
 
-func (s *Screen) GetNoisyPosition() mat.VecDense {
-	noise, err := s.positionNoise.Sample()
-	if err != nil {
-		log.Fatal("error generating position noise")
+		time.Sleep(sleepDuration)
 	}
-	var receiver mat.VecDense
-	receiver.AddVec(s.Puck.position, noise)
-	return receiver
-}
-
-func (s *Screen) GetNoisyVelocity() mat.VecDense {
-	noise, err := s.velocityNoise.Sample()
-	if err != nil {
-		log.Fatal("error generating position noise")
-	}
-	var receiver mat.VecDense
-	receiver.AddVec(s.Puck.velocity, noise)
-	return receiver
 }
 
 //NewScreen is a factory for Screen objects
@@ -67,6 +49,11 @@ func NewScreen(height float64, width float64) *Screen {
 	initialYPos := rand.Float64() * height
 	initialPosition := mat.NewVecDense(2, []float64{initialXPos, initialYPos})
 	initialVelocity := mat.NewVecDense(2, []float64{1.0, 1.0})
-	s.Puck = &Puck{initialPosition, initialVelocity}
+	s.Puck = &Puck{
+		initialPosition,
+		initialVelocity,
+		&BivariateGaussian{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
+		&BivariateGaussian{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
+	}
 	return s
 }
