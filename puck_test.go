@@ -30,8 +30,8 @@ func TestUpdatePosition(t *testing.T) {
 		testPuck := Puck{
 			table.startPosition,
 			table.velocity,
-			&BivariateGaussian{},
-			&BivariateGaussian{},
+			&MultivariateGaussian{},
+			&MultivariateGaussian{},
 		}
 		testPuck.UpdatePosition(table.timestep)
 		if !mat.Equal(testPuck.position, table.endPosition) {
@@ -48,8 +48,8 @@ func TestEdgeCollide(t *testing.T) {
 	testPuck := Puck{
 		mat.NewVecDense(2, []float64{0.0, 0.0}),
 		mat.NewVecDense(2, []float64{1.0, 1.0}),
-		&BivariateGaussian{},
-		&BivariateGaussian{},
+		&MultivariateGaussian{},
+		&MultivariateGaussian{},
 	}
 	testPuck.EdgeCollide(Top)
 	expectedVelocity := mat.NewVecDense(2, []float64{1.0, -1.0})

@@ -14,23 +14,14 @@ type GaussianRandomVariable struct {
 }
 
 func (grvs *GaussianRandomVariable) Sample() float64 {
-	// use box-muller transform from uniform to standard normal
-	u1 := rand.Float64()
-	u2 := rand.Float64()
-	x := math.Sqrt(-2*math.Log(u1)) * math.Cos(2*math.Pi*u2)
-
-	//scale and shift standard normal
-	x = x * math.Sqrt(grvs.variance)
-	x = x + grvs.mean
-
-	return x
+	return rand.NormFloat64()*math.Sqrt(grvs.variance) + grvs.mean
 }
 
-type BivariateGaussian struct {
+type MultivariateGaussian struct {
 	covariance *mat.SymDense
 }
 
-func (bg *BivariateGaussian) Sample() (mat.Vector, error) {
+func (bg *MultivariateGaussian) Sample() (mat.Vector, error) {
 	// see https://stackoverflow.com/questions/6142576/sample-from-multivariate-normal-gaussian-distribution-in-c
 	// see https://en.wikipedia.org/wiki/Multivariate_normal_distribution#Drawing_values_from_the_distribution
 	// TODO we don't need to recalculate the eigenvalues eigenvectors each time

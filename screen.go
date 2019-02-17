@@ -56,8 +56,8 @@ func NewScreen(height float64, width float64) *Screen {
 	s.Puck = &Puck{
 		initialPosition,
 		initialVelocity,
-		&BivariateGaussian{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
-		&BivariateGaussian{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
+		&MultivariateGaussian{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
+		&MultivariateGaussian{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
 	}
 	return s
 }

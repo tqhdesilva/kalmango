@@ -18,8 +18,8 @@ const (
 type Puck struct {
 	position      *mat.VecDense
 	velocity      *mat.VecDense
-	positionNoise *BivariateGaussian
-	velocityNoise *BivariateGaussian
+	positionNoise *MultivariateGaussian
+	velocityNoise *MultivariateGaussian
 }
 
 func (p *Puck) UpdatePosition(timestep float64) {
