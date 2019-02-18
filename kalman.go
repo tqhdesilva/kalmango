@@ -48,7 +48,7 @@ type KalmanFilter struct {
 	prediction    *mat.Dense // F_k
 }
 
-func (k *KalmanFilter) Predict() *State {
+func (k *KalmanFilter) Predict() {
 	var newMean *mat.VecDense
 	var newCovDense *mat.Dense
 	var newState *State
@@ -60,34 +60,31 @@ func (k *KalmanFilter) Predict() *State {
 	var newCovMat *CovMat
 	newCovMat.FromDense(newCovDense)
 	newState.covariance = newCovMat
-	return newState
+	*k.State = *newState
 }
 
 func (k *KalmanFilter) Update(measurement *mat.VecDense) {
-	// updates state
-	predictedState := k.Predict() // hat x_k, P_k
-
 	// calculate K'
 	// (19)
 	var newKalmanGain *mat.Dense
-	newKalmanGain.Mul(k.stateToSensor, predictedState.covariance)
+	newKalmanGain.Mul(k.stateToSensor, k.State.covariance)
 	newKalmanGain.Mul(newKalmanGain, k.stateToSensor.T())
 	newKalmanGain.Add(newKalmanGain, k.Sensor.covariance)
 	newKalmanGain.Inverse(newKalmanGain)
 	newKalmanGain.Mul(k.stateToSensor.T(), newKalmanGain)
-	newKalmanGain.Mul(predictedState.covariance, newKalmanGain)
+	newKalmanGain.Mul(k.State.covariance, newKalmanGain)
 
 	// calculate hat x'_k
 	var newStateMean *mat.VecDense
-	newStateMean.MulVec(k.stateToSensor, predictedState.mean)
+	newStateMean.MulVec(k.stateToSensor, k.State.mean)
 	newStateMean.SubVec(measurement, newStateMean)
 	newStateMean.MulVec(newKalmanGain, newStateMean)
-	newStateMean.AddVec(predictedState.mean, newStateMean)
+	newStateMean.AddVec(k.State.mean, newStateMean)
 
 	var newStateCovarianceDense *mat.Dense
-	newStateCovarianceDense.Mul(k.stateToSensor, predictedState.covariance)
+	newStateCovarianceDense.Mul(k.stateToSensor, k.State.covariance)
 	newStateCovarianceDense.Mul(newKalmanGain, newStateCovarianceDense)
-	newStateCovarianceDense.Sub(predictedState.covariance, newStateCovarianceDense)
+	newStateCovarianceDense.Sub(k.State.covariance, newStateCovarianceDense)
 	var newStateCovariance *CovMat
 	newStateCovariance.FromDense(newStateCovarianceDense)
 
