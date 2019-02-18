@@ -13,6 +13,12 @@ type CovMat struct {
 	*mat.SymDense
 }
 
+func NewCovMat(n int, data []float64) (*CovMat, error) {
+	return &CovMat{
+		mat.NewSymDense(n, data),
+	}, nil
+}
+
 func (cm *CovMat) FromDense(d *mat.Dense) error {
 	// TODO implement this
 	t := d.T()
@@ -44,23 +50,47 @@ type KalmanFilter struct {
 	*Sensor
 	*State
 	stateToSensor *mat.Dense // H_k
-	noise         *mat.Dense // Q_k
+	noise         *CovMat    // Q_k
 	prediction    *mat.Dense // F_k
 }
 
-func (k *KalmanFilter) Predict() {
-	var newMean *mat.VecDense
-	var newCovDense *mat.Dense
-	var newState *State
+func (k *KalmanFilter) Predict() error {
+	//var newMean *mat.VecDense
+	newMean := mat.NewVecDense(2, []float64{0.0, 0.0})
+	newCovDense := mat.NewDense(2, 2, []float64{0.0, 0.0, 0.0, 0.0})
+	covMat, err := NewCovMat(2, []float64{0.0, 0.0, 0.0, 0.0})
+	if err != nil {
+		return err
+	}
+	newState := &State{
+		covariance: covMat,
+	}
+	_, cols := k.prediction.Dims()
+	if cols != k.State.mean.Len() {
+		return errors.New("incorrect dimensions")
+	}
+	if k.prediction == nil {
+		return errors.New("prediction is nil")
+	}
+	if k.State == nil {
+		return errors.New("state is nil")
+	}
+	if k.State.mean == nil {
+		return errors.New("state mean is nil")
+	}
 	newMean.MulVec(k.prediction, k.State.mean)
 	newCovDense.Mul(k.prediction, k.State.covariance)
 	newCovDense.Mul(newCovDense, k.prediction.T())
 
 	newState.mean = newMean
-	var newCovMat *CovMat
+	newCovMat, err := NewCovMat(2, []float64{0.0, 0.0, 0.0, 0.0})
+	if err != nil {
+		return err
+	}
 	newCovMat.FromDense(newCovDense)
 	newState.covariance = newCovMat
 	*k.State = *newState
+	return nil
 }
 
 func (k *KalmanFilter) Update(measurement *mat.VecDense) {
