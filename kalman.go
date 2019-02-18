@@ -13,10 +13,10 @@ type CovMat struct {
 	*mat.SymDense
 }
 
-func (cm *CovMat) FromDense(d mat.Dense) error {
+func (cm *CovMat) FromDense(d *mat.Dense) error {
 	// TODO implement this
 	t := d.T()
-	if !mat.Equal(&d, t) {
+	if !mat.Equal(d, t) {
 		return errors.New("can't convert non-symmetric Dense matrix to SymDense")
 	}
 	n, _ := d.Dims()
@@ -36,7 +36,7 @@ type Sensor struct {
 }
 
 type State struct {
-	covariance *CovMat
+	covariance *CovMat       // P_k
 	mean       *mat.VecDense // x_hat_k
 }
 
@@ -58,12 +58,38 @@ func (k *KalmanFilter) Predict() *State {
 
 	newState.mean = newMean
 	var newCovMat *CovMat
-	newCovMat.FromDense(*newCovDense)
+	newCovMat.FromDense(newCovDense)
 	newState.covariance = newCovMat
 	return newState
 }
 
-func (k *KalmanFilter) Update() {
+func (k *KalmanFilter) Update(measurement *mat.VecDense) {
 	// updates state
-	k.Sensor.noise.Sample()
+	predictedState := k.Predict() // hat x_k, P_k
+
+	// calculate K'
+	// (19)
+	var newKalmanGain *mat.Dense
+	newKalmanGain.Mul(k.stateToSensor, predictedState.covariance)
+	newKalmanGain.Mul(newKalmanGain, k.stateToSensor.T())
+	newKalmanGain.Add(newKalmanGain, k.Sensor.covariance)
+	newKalmanGain.Inverse(newKalmanGain)
+	newKalmanGain.Mul(k.stateToSensor.T(), newKalmanGain)
+	newKalmanGain.Mul(predictedState.covariance, newKalmanGain)
+
+	// calculate hat x'_k
+	var newStateMean *mat.VecDense
+	newStateMean.MulVec(k.stateToSensor, predictedState.mean)
+	newStateMean.SubVec(measurement, newStateMean)
+	newStateMean.MulVec(newKalmanGain, newStateMean)
+	newStateMean.AddVec(predictedState.mean, newStateMean)
+
+	var newStateCovarianceDense *mat.Dense
+	newStateCovarianceDense.Mul(k.stateToSensor, predictedState.covariance)
+	newStateCovarianceDense.Mul(newKalmanGain, newStateCovarianceDense)
+	newStateCovarianceDense.Sub(predictedState.covariance, newStateCovarianceDense)
+	var newStateCovariance *CovMat
+	newStateCovariance.FromDense(newStateCovarianceDense)
+
+	k.State = &State{newStateCovariance, newStateMean}
 }
