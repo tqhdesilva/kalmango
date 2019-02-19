@@ -56,9 +56,10 @@ type KalmanFilter struct {
 
 func (k *KalmanFilter) Predict() error {
 	//var newMean *mat.VecDense
-	newMean := mat.NewVecDense(4, make([]float64, 4))
-	newCovDense := mat.NewDense(4, 4, make([]float64, 16))
-	covMat, err := NewCovMat(4, make([]float64, 16))
+	n := k.State.mean.Len()
+	newMean := mat.NewVecDense(n, make([]float64, n))
+	newCovDense := mat.NewDense(n, n, make([]float64, n*n))
+	covMat, err := NewCovMat(n, make([]float64, n*n))
 	if err != nil {
 		return err
 	}
@@ -83,12 +84,7 @@ func (k *KalmanFilter) Predict() error {
 	newCovDense.Mul(newCovDense, k.prediction.T())
 
 	newState.mean = newMean
-	newCovMat, err := NewCovMat(4, []float64{
-		0.0, 0.0, 0.0, 0.0,
-		0.0, 0.0, 0.0, 0.0,
-		0.0, 0.0, 0.0, 0.0,
-		0.0, 0.0, 0.0, 0.0,
-	})
+	newCovMat, err := NewCovMat(n, make([]float64, n*n))
 	if err != nil {
 		return err
 	}
@@ -101,7 +97,8 @@ func (k *KalmanFilter) Predict() error {
 func (k *KalmanFilter) Update(measurement *mat.VecDense) error {
 	// calculate K'
 	// (19)
-	newKalmanGain := mat.NewDense(2, 2, make([]float64, 4))
+	n := k.State.mean.Len()
+	newKalmanGain := mat.NewDense(n, n, make([]float64, n*n))
 	newKalmanGain.Mul(k.stateToSensor, k.State.covariance)
 	newKalmanGain.Mul(newKalmanGain, k.stateToSensor.T())
 	newKalmanGain.Add(newKalmanGain, k.Sensor.covariance)
@@ -110,17 +107,17 @@ func (k *KalmanFilter) Update(measurement *mat.VecDense) error {
 	newKalmanGain.Mul(k.State.covariance, newKalmanGain)
 
 	// calculate hat x'_k
-	newStateMean := mat.NewVecDense(2, make([]float64, 2))
+	newStateMean := mat.NewVecDense(n, make([]float64, n))
 	newStateMean.MulVec(k.stateToSensor, k.State.mean)
 	newStateMean.SubVec(measurement, newStateMean)
 	newStateMean.MulVec(newKalmanGain, newStateMean)
 	newStateMean.AddVec(k.State.mean, newStateMean)
 
-	newStateCovarianceDense := mat.NewDense(2, 2, make([]float64, 4))
+	newStateCovarianceDense := mat.NewDense(n, n, make([]float64, n*n))
 	newStateCovarianceDense.Mul(k.stateToSensor, k.State.covariance)
 	newStateCovarianceDense.Mul(newKalmanGain, newStateCovarianceDense)
 	newStateCovarianceDense.Sub(k.State.covariance, newStateCovarianceDense)
-	newStateCovariance, err := NewCovMat(2, make([]float64, 4))
+	newStateCovariance, err := NewCovMat(n, make([]float64, n*n))
 	if err != nil {
 		return err
 	}
