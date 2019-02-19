@@ -86,13 +86,27 @@ func mkHandler(timedelta float64) func(http.ResponseWriter, *http.Request) {
 			log.Println(err)
 			return
 		}
+		go func() {
+			for {
+				mt, message, err := conn.ReadMessage()
+				if err != nil {
+					log.Printf("read error: %s", err)
+				}
+				if (mt == websocket.TextMessage) &&
+					(string(message) == "update") {
+					kf.Update(screen.GetNoisyState())
+					fmt.Println("predictions updated")
+				}
+
+			}
+		}()
 		for {
 			// mt, message, err := conn.ReadMessage()
 			// if err != nil {
 			// 	log.Printf("read:", err)
 			// 	return
 			// }
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(time.Duration(timedelta/.001) * time.Millisecond)
 			<-c
 			err = conn.WriteMessage(
 				websocket.TextMessage,
@@ -102,12 +116,13 @@ func mkHandler(timedelta float64) func(http.ResponseWriter, *http.Request) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			err = kf.Update(screen.GetNoisyState())
 			err = conn.WriteMessage(
 				websocket.TextMessage,
 				[]byte(fmt.Sprintf("Prediction: %+v", kf.State.mean)),
 			)
 			if err != nil {
-				log.Printf("write:", err)
+				log.Printf("write: %s", err)
 			}
 		}
 	}
