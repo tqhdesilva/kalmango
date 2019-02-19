@@ -60,3 +60,14 @@ func (p *Puck) GetNoisyVelocity() mat.VecDense {
 	receiver.AddVec(p.velocity, noise)
 	return receiver
 }
+
+func (p *Puck) GetNoisyState() *mat.VecDense {
+	pos := p.GetNoisyPosition()
+	vel := p.GetNoisyVelocity()
+	data := make([]float64, 4)
+	data[0] = pos.AtVec(0)
+	data[1] = pos.AtVec(1)
+	data[2] = vel.AtVec(0)
+	data[3] = vel.AtVec(1)
+	return mat.NewVecDense(4, data)
+}

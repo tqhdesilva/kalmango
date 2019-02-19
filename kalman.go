@@ -56,9 +56,9 @@ type KalmanFilter struct {
 
 func (k *KalmanFilter) Predict() error {
 	//var newMean *mat.VecDense
-	newMean := mat.NewVecDense(2, []float64{0.0, 0.0})
-	newCovDense := mat.NewDense(2, 2, []float64{0.0, 0.0, 0.0, 0.0})
-	covMat, err := NewCovMat(2, []float64{0.0, 0.0, 0.0, 0.0})
+	newMean := mat.NewVecDense(4, make([]float64, 4))
+	newCovDense := mat.NewDense(4, 4, make([]float64, 16))
+	covMat, err := NewCovMat(4, make([]float64, 16))
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,12 @@ func (k *KalmanFilter) Predict() error {
 	newCovDense.Mul(newCovDense, k.prediction.T())
 
 	newState.mean = newMean
-	newCovMat, err := NewCovMat(2, []float64{0.0, 0.0, 0.0, 0.0})
+	newCovMat, err := NewCovMat(4, []float64{
+		0.0, 0.0, 0.0, 0.0,
+		0.0, 0.0, 0.0, 0.0,
+		0.0, 0.0, 0.0, 0.0,
+		0.0, 0.0, 0.0, 0.0,
+	})
 	if err != nil {
 		return err
 	}
