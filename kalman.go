@@ -5,7 +5,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 
 	"gonum.org/v1/gonum/mat"
 	// "gonum.org/v1/gonum/floats"
@@ -27,7 +26,6 @@ func (cm *CovMat) FromDense(d *mat.Dense) error {
 	if !mat.EqualApprox(d, t, .0001) {
 		return errors.New("can't convert non-symmetric Dense matrix to SymDense")
 	}
-	fmt.Printf("mat: %+v, transpose: %+v", d, t)
 	n, _ := d.Dims()
 	rowColumnView := make([]float64, n*n)
 	for i := 0; i < n; i++ {
@@ -123,7 +121,6 @@ func (k *KalmanFilter) Update(measurement *mat.VecDense) error {
 	newStateCovarianceDense.Mul(k.stateToSensor, k.State.covariance)
 	newStateCovarianceDense.Mul(newKalmanGain, newStateCovarianceDense)
 	newStateCovarianceDense.Sub(k.State.covariance, newStateCovarianceDense)
-	fmt.Printf("middle:%+v", newStateCovarianceDense)
 	newStateCovariance, err := NewCovMat(n, make([]float64, n*n))
 	if err != nil {
 		return err
@@ -133,8 +130,65 @@ func (k *KalmanFilter) Update(measurement *mat.VecDense) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("cov mat:%+v", newStateCovariance.SymDense)
 
 	k.State = &State{newStateCovariance, newStateMean}
 	return nil
+}
+
+func NewKalmanFilter(initialMeasurement *mat.VecDense, timedelta float64) (*KalmanFilter, error) {
+	sensorCovMat, err := NewCovMat(4, []float64{
+		1.0, 0.0, 0.0, 0.0,
+		0.0, 1.0, 0.0, 0.0,
+		0.0, 0.0, 1.0, 0.0,
+		0.0, 0.0, 0.0, 1.0,
+	})
+	if err != nil {
+		return nil, err
+	}
+	sensor := &Sensor{
+		sensorCovMat,
+	}
+
+	stateToSensor := mat.NewDense(4, 4, []float64{
+		1.0, 0.0, 0.0, 0.0,
+		0.0, 1.0, 0.0, 0.0,
+		0.0, 0.0, 1.0, 0.0,
+		0.0, 0.0, 0.0, 1.0,
+	})
+	noise, err := NewCovMat(4, []float64{
+		0.0, 0.0, 0.0, 0.0,
+		0.0, 0.0, 0.0, 0.0,
+		0.0, 0.0, 0.0, 0.0,
+		0.0, 0.0, 0.0, 0.0,
+	})
+	prediction := mat.NewDense(4, 4, []float64{
+		1.0, 0.0, timedelta, 0.0,
+		0.0, 1.0, 0.0, timedelta,
+		0.0, 0.0, 1.0, 0.0,
+		0.0, 0.0, 0.0, 1.0,
+	})
+	// initially ought to be the same as sensorCovMat
+	stateCovMat, err := NewCovMat(4, []float64{
+		1.0, 0.0, 0.0, 0.0,
+		0.0, 1.0, 0.0, 0.0,
+		0.0, 0.0, 1.0, 0.0,
+		0.0, 1.0, 0.0, 1.0,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	initialState := &State{
+		stateCovMat,
+		initialMeasurement,
+	}
+
+	kf := &KalmanFilter{
+		sensor,
+		initialState,
+		stateToSensor,
+		noise,
+		prediction,
+	}
+	return kf, nil
 }

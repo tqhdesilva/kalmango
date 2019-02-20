@@ -7,70 +7,10 @@ import (
 	"net/http"
 	"time"
 
-	"gonum.org/v1/gonum/mat"
-
 	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{}
-
-func NewKalmanFilter(initialMeasurement *mat.VecDense, timedelta float64) (*KalmanFilter, error) {
-	sensorCovMat, err := NewCovMat(4, []float64{
-		1.0, 0.0, 0.0, 0.0,
-		0.0, 1.0, 0.0, 0.0,
-		0.0, 0.0, 1.0, 0.0,
-		0.0, 0.0, 0.0, 1.0,
-	})
-	if err != nil {
-		return nil, err
-	}
-	sensor := &Sensor{
-		sensorCovMat,
-	}
-
-	stateToSensor := mat.NewDense(4, 4, []float64{
-		1.0, 0.0, 0.0, 0.0,
-		0.0, 1.0, 0.0, 0.0,
-		0.0, 0.0, 1.0, 0.0,
-		0.0, 0.0, 0.0, 1.0,
-	})
-	noise, err := NewCovMat(4, []float64{
-		0.0, 0.0, 0.0, 0.0,
-		0.0, 0.0, 0.0, 0.0,
-		0.0, 0.0, 0.0, 0.0,
-		0.0, 0.0, 0.0, 0.0,
-	})
-	prediction := mat.NewDense(4, 4, []float64{
-		1.0, 0.0, timedelta, 0.0,
-		0.0, 1.0, 0.0, timedelta,
-		0.0, 0.0, 1.0, 0.0,
-		0.0, 0.0, 0.0, 1.0,
-	})
-	// initially ought to be the same as sensorCovMat
-	stateCovMat, err := NewCovMat(4, []float64{
-		1.0, 0.0, 0.0, 0.0,
-		0.0, 1.0, 0.0, 0.0,
-		0.0, 0.0, 1.0, 0.0,
-		0.0, 1.0, 0.0, 1.0,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	initialState := &State{
-		stateCovMat,
-		initialMeasurement,
-	}
-
-	kf := &KalmanFilter{
-		sensor,
-		initialState,
-		stateToSensor,
-		noise,
-		prediction,
-	}
-	return kf, nil
-}
 
 func mkHandler(timedelta float64) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +38,6 @@ func mkHandler(timedelta float64) func(http.ResponseWriter, *http.Request) {
 					if err != nil {
 						log.Fatal(err)
 					}
-					fmt.Println("predictions updated")
 				}
 
 			}
@@ -114,12 +53,10 @@ func mkHandler(timedelta float64) func(http.ResponseWriter, *http.Request) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("before: %+v", kf.State.covariance.SymDense)
 			err = kf.Update(screen.GetNoisyState())
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("after: %+v", kf.State.covariance.SymDense)
 			err = conn.WriteMessage(
 				websocket.TextMessage,
 				[]byte(fmt.Sprintf("Mean: %+v", kf.State.mean)),
