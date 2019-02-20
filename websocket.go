@@ -19,7 +19,7 @@ func NewKalmanFilter(initialMeasurement *mat.VecDense, timedelta float64) (*Kalm
 		1.0, 0.0, 0.0, 0.0,
 		0.0, 1.0, 0.0, 0.0,
 		0.0, 0.0, 1.0, 0.0,
-		0.0, 1.0, 0.0, 1.0,
+		0.0, 0.0, 0.0, 1.0,
 	})
 	if err != nil {
 		return nil, err
@@ -94,32 +94,39 @@ func mkHandler(timedelta float64) func(http.ResponseWriter, *http.Request) {
 				}
 				if (mt == websocket.TextMessage) &&
 					(string(message) == "update") {
-					kf.Update(screen.GetNoisyState())
+					err = kf.Update(screen.GetNoisyState())
+					if err != nil {
+						log.Fatal(err)
+					}
 					fmt.Println("predictions updated")
 				}
 
 			}
 		}()
 		for {
-			// mt, message, err := conn.ReadMessage()
-			// if err != nil {
-			// 	log.Printf("read:", err)
-			// 	return
-			// }
 			time.Sleep(time.Duration(timedelta/.001) * time.Millisecond)
 			<-c
 			err = conn.WriteMessage(
 				websocket.TextMessage,
-				[]byte(fmt.Sprintf("Measurement: %+v", screen.GetNoisyPosition())),
+				[]byte(fmt.Sprintf("Measurement: %+v", screen.GetNoisyState())),
 			)
 			err = kf.Predict()
 			if err != nil {
 				log.Fatal(err)
 			}
+			fmt.Printf("before: %+v", kf.State.covariance.SymDense)
 			err = kf.Update(screen.GetNoisyState())
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("after: %+v", kf.State.covariance.SymDense)
 			err = conn.WriteMessage(
 				websocket.TextMessage,
-				[]byte(fmt.Sprintf("Prediction: %+v", kf.State.mean)),
+				[]byte(fmt.Sprintf("Mean: %+v", kf.State.mean)),
+			)
+			conn.WriteMessage(
+				websocket.TextMessage,
+				[]byte(fmt.Sprintf("Covariance: %+v", kf.State.covariance.SymDense)),
 			)
 			if err != nil {
 				log.Printf("write: %s", err)
@@ -127,3 +134,5 @@ func mkHandler(timedelta float64) func(http.ResponseWriter, *http.Request) {
 		}
 	}
 }
+
+// TODO handle socket.close()

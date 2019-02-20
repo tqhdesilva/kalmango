@@ -65,3 +65,26 @@ func TestUpdate(t *testing.T) {
 		t.Error("mean state is still the same")
 	}
 }
+
+func TestFromDense(t *testing.T) {
+	denseMat := mat.NewDense(4, 4, []float64{
+		0.20784313725490197, 0, 0.0392156862745098, 0,
+		0, 0.20784313725490197, 0, 0.0392156862745098,
+		0.03921568627450981, 0, 0.19607843137254902, 0,
+		0, 0.03921568627450981, 0, 0.19607843137254902,
+	})
+	covMat, _ := NewCovMat(4, make([]float64, 16))
+	err := covMat.FromDense(denseMat)
+	if err != nil {
+		t.Error(err)
+	}
+	var sum float64
+	for i := 0; i < 4; i++ {
+		for j := 0; j < 4; j++ {
+			sum = sum + covMat.At(i, j)
+		}
+	}
+	if sum == 0.0 {
+		t.Error("Got zero matrix")
+	}
+}

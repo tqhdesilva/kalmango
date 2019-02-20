@@ -1,3 +1,6 @@
+// TODO add control vector, control matrix correction for edge collisions
+// maybe have a channel just for those events?
+// TODO add covariance matrix to websocket stream
 package main
 
 import (

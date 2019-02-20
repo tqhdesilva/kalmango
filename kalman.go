@@ -5,8 +5,10 @@ package main
 
 import (
 	"errors"
+	"fmt"
 
 	"gonum.org/v1/gonum/mat"
+	// "gonum.org/v1/gonum/floats"
 )
 
 type CovMat struct {
@@ -22,9 +24,10 @@ func NewCovMat(n int, data []float64) (*CovMat, error) {
 func (cm *CovMat) FromDense(d *mat.Dense) error {
 	// TODO implement this
 	t := d.T()
-	if !mat.Equal(d, t) {
+	if !mat.EqualApprox(d, t, .0001) {
 		return errors.New("can't convert non-symmetric Dense matrix to SymDense")
 	}
+	fmt.Printf("mat: %+v, transpose: %+v", d, t)
 	n, _ := d.Dims()
 	rowColumnView := make([]float64, n*n)
 	for i := 0; i < n; i++ {
@@ -88,7 +91,10 @@ func (k *KalmanFilter) Predict() error {
 	if err != nil {
 		return err
 	}
-	newCovMat.FromDense(newCovDense)
+	err = newCovMat.FromDense(newCovDense)
+	if err != nil {
+		return err
+	}
 	newState.covariance = newCovMat
 	*k.State = *newState
 	return nil
@@ -117,11 +123,17 @@ func (k *KalmanFilter) Update(measurement *mat.VecDense) error {
 	newStateCovarianceDense.Mul(k.stateToSensor, k.State.covariance)
 	newStateCovarianceDense.Mul(newKalmanGain, newStateCovarianceDense)
 	newStateCovarianceDense.Sub(k.State.covariance, newStateCovarianceDense)
+	fmt.Printf("middle:%+v", newStateCovarianceDense)
 	newStateCovariance, err := NewCovMat(n, make([]float64, n*n))
 	if err != nil {
 		return err
 	}
-	newStateCovariance.FromDense(newStateCovarianceDense)
+	// error definitely in FromDense
+	err = newStateCovariance.FromDense(newStateCovarianceDense)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("cov mat:%+v", newStateCovariance.SymDense)
 
 	k.State = &State{newStateCovariance, newStateMean}
 	return nil
