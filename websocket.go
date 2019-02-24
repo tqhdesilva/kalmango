@@ -12,15 +12,15 @@ import (
 
 var upgrader = websocket.Upgrader{}
 
-func mkHandler(timedelta float64) func(http.ResponseWriter, *http.Request) {
+func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// setup screen and kalman filter
+		// setup s and kalman filter
 		rand.Seed(time.Now().UTC().UnixNano())
-		screen := NewScreen(10, 10)
+		s := NewScreen(10, 10)
 		c := make(chan time.Time)
-		go screen.Run(timedelta, c)
-		initialMeasurement := screen.GetNoisyState()
-		kf, err := NewKalmanFilter(initialMeasurement, timedelta)
+		go s.Run(td, c)
+		initialMeasurement := s.GetNoisyState()
+		kf, err := NewKalmanFilter(initialMeasurement, td)
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Println(err)
@@ -28,13 +28,13 @@ func mkHandler(timedelta float64) func(http.ResponseWriter, *http.Request) {
 		}
 		go func() {
 			for {
-				mt, message, err := conn.ReadMessage()
+				mt, msg, err := conn.ReadMessage()
 				if err != nil {
 					log.Printf("read error: %s", err)
 				}
 				if (mt == websocket.TextMessage) &&
-					(string(message) == "update") {
-					err = kf.Update(screen.GetNoisyState())
+					(string(msg) == "update") {
+					err = kf.Update(s.GetNoisyState())
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -43,17 +43,17 @@ func mkHandler(timedelta float64) func(http.ResponseWriter, *http.Request) {
 			}
 		}()
 		for {
-			time.Sleep(time.Duration(timedelta/.001) * time.Millisecond)
+			time.Sleep(time.Duration(td/.001) * time.Millisecond)
 			<-c
 			err = conn.WriteMessage(
 				websocket.TextMessage,
-				[]byte(fmt.Sprintf("Measurement: %+v", screen.GetNoisyState())),
+				[]byte(fmt.Sprintf("Measurement: %+v", s.GetNoisyState())),
 			)
 			err = kf.Predict()
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = kf.Update(screen.GetNoisyState())
+			err = kf.Update(s.GetNoisyState())
 			if err != nil {
 				log.Fatal(err)
 			}

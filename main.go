@@ -11,10 +11,10 @@ import (
 )
 
 func main() {
-	const timedelta float64 = .1
+	const td float64 = .1
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	handler := mkHandler(timedelta)
-	http.HandleFunc("/websocket", handler)
+	h := MakeHandler(td)
+	http.HandleFunc("/websocket", h)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
