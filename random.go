@@ -30,16 +30,14 @@ func (bg *MultivariateGaussian) Sample() (mat.Vector, error) {
 		return nil, errors.New("covariance matrix is not square")
 	}
 	iidSamples := make([]float64, rows)
-	standardNormal := GaussianRandomVariable{0.0, 1.0}
+	grv := GaussianRandomVariable{0.0, 1.0}
 	for i := 0; i < rows; i++ {
-		iidSamples[i] = standardNormal.Sample()
+		iidSamples[i] = grv.Sample()
 	}
 	eigenSym := mat.EigenSym{}
 	if !eigenSym.Factorize(bg.covariance, true) {
 		return nil, errors.New("factorization of covariance matrix failed")
 	}
-	// do we need to add orthonormality assertion, or is that guaranteed?
-	// I think it is guaranteed
 	q := mat.Dense{}
 	eigenValues := eigenSym.Values(nil)
 	q.EigenvectorsSym(&eigenSym)
