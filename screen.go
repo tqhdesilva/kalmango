@@ -16,30 +16,36 @@ type Screen struct {
 // const tickDuration time.Duration = 100 * time.Millisecond
 // const timeStep float64 = .1
 
-func (s *Screen) Run(timeStep float64, c chan time.Time) {
+func (s *Screen) Run(timeStep float64, c chan time.Time, b chan Edge) {
 	var tickDuration time.Duration = time.Duration(timeStep*1000) * time.Millisecond
 	tick := time.Tick(tickDuration)
 	for {
 		select {
 		case timeStamp := <-tick:
-			x := s.Puck.position.AtVec(0)
-			y := s.Puck.position.AtVec(1)
-			switch {
-			case x >= s.ScreenWidth:
-				s.Puck.EdgeCollide(Right)
-			case x <= float64(0):
-				s.Puck.EdgeCollide(Left)
-			}
+			func() {
+				x := s.Puck.position.AtVec(0)
+				y := s.Puck.position.AtVec(1)
+				switch {
+				case x >= s.ScreenWidth:
+					s.Puck.EdgeCollide(Right)
+					defer func() { b <- Right }()
+				case x <= float64(0):
+					s.Puck.EdgeCollide(Left)
+					defer func() { b <- Left }()
+				}
 
-			switch {
-			case y >= s.ScreenHeight:
-				s.Puck.EdgeCollide(Bottom)
-			case y <= float64(0):
-				s.Puck.EdgeCollide(Top)
-			}
+				switch {
+				case y >= s.ScreenHeight:
+					s.Puck.EdgeCollide(Bottom)
+					defer func() { b <- Bottom }()
+				case y <= float64(0):
+					s.Puck.EdgeCollide(Top)
+					defer func() { b <- Top }()
+				}
 
-			s.Puck.UpdatePosition(timeStep)
-			c <- timeStamp
+				s.Puck.UpdatePosition(timeStep)
+				c <- timeStamp
+			}()
 		}
 	}
 }

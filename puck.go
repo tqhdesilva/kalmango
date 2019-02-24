@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"gonum.org/v1/gonum/mat"
@@ -40,6 +41,7 @@ func (p *Puck) EdgeCollide(e Edge) {
 }
 
 func (p *Puck) GetNoisyPosition() mat.VecDense {
+	fmt.Printf("velocity: %+v, position: %+v", p.velocity, p.position)
 	n := p.position.Len()
 	noise, err := p.positionNoise.Sample()
 	if err != nil {
@@ -71,7 +73,7 @@ func (p *Puck) GetNoisyState() *mat.VecDense {
 		data[i] = pos.AtVec(i)
 	}
 	for i := 0; i < m; i++ {
-		data[i+n] = pos.AtVec(i)
+		data[i+n] = vel.AtVec(i)
 	}
 	return mat.NewVecDense(n+m, data)
 }

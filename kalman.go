@@ -54,7 +54,7 @@ type KalmanFilter struct {
 	prediction    *mat.Dense // F_k
 }
 
-func (k *KalmanFilter) Predict() error {
+func (k *KalmanFilter) Predict(Bk *mat.Dense, uk *mat.VecDense) error {
 	n := k.State.mean.Len()
 	x := mat.NewVecDense(n, make([]float64, n))
 	pd := mat.NewDense(n, n, make([]float64, n*n))
@@ -71,7 +71,11 @@ func (k *KalmanFilter) Predict() error {
 	if k.State.mean == nil {
 		return errors.New("state mean is nil")
 	}
+	control := mat.NewVecDense(n, make([]float64, n))
+	control.MulVec(Bk, uk)
 	x.MulVec(k.prediction, k.State.mean)
+	x.AddVec(x, control)
+
 	pd.Mul(k.prediction, k.State.covariance)
 	pd.Mul(pd, k.prediction.T())
 
