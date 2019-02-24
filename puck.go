@@ -29,45 +29,49 @@ func (p *Puck) UpdatePosition(timestep float64) {
 func (p *Puck) EdgeCollide(e Edge) {
 	switch e {
 	case Top, Bottom:
-		var newYVelocity float64
-		newYVelocity = -1 * p.velocity.AtVec(1)
-		p.velocity.SetVec(1, newYVelocity)
+		vy := -1 * p.velocity.AtVec(1)
+		p.velocity.SetVec(1, vy)
 	case Right, Left:
-		var newXVelocity float64
-		newXVelocity = -1 * p.velocity.AtVec(0)
-		p.velocity.SetVec(0, newXVelocity)
+		vx := -1 * p.velocity.AtVec(0)
+		p.velocity.SetVec(0, vx)
 	default:
 		p.velocity.ScaleVec(-1, p.velocity)
 	}
 }
 
 func (p *Puck) GetNoisyPosition() mat.VecDense {
+	n := p.position.Len()
 	noise, err := p.positionNoise.Sample()
 	if err != nil {
 		log.Fatal("error generating position noise")
 	}
-	var receiver mat.VecDense
-	receiver.AddVec(p.position, noise)
-	return receiver
+	pos := mat.NewVecDense(n, make([]float64, n))
+	pos.AddVec(p.position, noise)
+	return *pos
 }
 
 func (p *Puck) GetNoisyVelocity() mat.VecDense {
+	n := p.position.Len()
 	noise, err := p.velocityNoise.Sample()
 	if err != nil {
 		log.Fatal("error generating position noise")
 	}
-	var receiver mat.VecDense
-	receiver.AddVec(p.velocity, noise)
-	return receiver
+	pos := mat.NewVecDense(n, make([]float64, n))
+	pos.AddVec(p.velocity, noise)
+	return *pos
 }
 
 func (p *Puck) GetNoisyState() *mat.VecDense {
 	pos := p.GetNoisyPosition()
 	vel := p.GetNoisyVelocity()
-	data := make([]float64, 4)
-	data[0] = pos.AtVec(0)
-	data[1] = pos.AtVec(1)
-	data[2] = vel.AtVec(0)
-	data[3] = vel.AtVec(1)
-	return mat.NewVecDense(4, data)
+	n := pos.Len()
+	m := vel.Len()
+	data := make([]float64, n+m)
+	for i := 0; i < n; i++ {
+		data[i] = pos.AtVec(i)
+	}
+	for i := 0; i < m; i++ {
+		data[i+n] = pos.AtVec(i)
+	}
+	return mat.NewVecDense(n+m, data)
 }
