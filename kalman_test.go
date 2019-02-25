@@ -39,6 +39,39 @@ func TestPredict(t *testing.T) {
 	}
 }
 
+func TestPredictControl(t *testing.T) {
+	const timeDelta float64 = .1
+	sensor := &Sensor{
+		&CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
+	}
+	state := &State{
+		&CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
+		mat.NewVecDense(2, []float64{5.0, 1.0}),
+	}
+	stateToSensor := mat.NewDense(2, 2, []float64{1.0, 0.0, 0.0, 1.0})
+	noise := &CovMat{mat.NewSymDense(2, []float64{0.0, 0.0, 0.0, 0.0})}
+	prediction := mat.NewDense(2, 2, []float64{1.0, timeDelta, 0.0, 1.0})
+	kf := &KalmanFilter{
+		sensor,
+		state,
+		stateToSensor,
+		noise,
+		prediction,
+	}
+	if kf.State == nil {
+		t.Error("state is nil")
+	}
+	if kf.prediction == nil {
+		t.Error("prediction is nil")
+	}
+	Bk := mat.NewDense(2, 2, []float64{0, 0, 0, -2 * state.mean.AtVec(1)})
+	uk := mat.NewVecDense(2, []float64{0, 1})
+	kf.Predict(Bk, uk)
+	if expected := mat.NewVecDense(2, []float64{5.1, -1.0}); !mat.Equal(expected, state.mean) {
+		t.Errorf("expected: %+v, got: %+v", expected, state.mean)
+	}
+}
+
 func TestUpdate(t *testing.T) {
 	const timeDelta float64 = .1
 	sensor := &Sensor{
