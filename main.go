@@ -5,14 +5,11 @@ package main
 
 import (
 	"log"
-	"math/rand"
 	"net/http"
-	"time"
 )
 
 func main() {
 	const td float64 = .1
-	rand.Seed(time.Now().UTC().UnixNano())
 
 	h := MakeHandler(td)
 	http.HandleFunc("/websocket", h)

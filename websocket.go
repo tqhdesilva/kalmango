@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -14,9 +13,57 @@ import (
 
 var upgrader = websocket.Upgrader{}
 
+type Message struct {
+	EstimatedPosition   []float64   `json: "esimated_position"`
+	EstimatedCovariance [][]float64 `json:"estimated_covariance"`
+	ActualPosition      []float64   `json: "actual_position"`
+	Time                time.Time   `json: "timestamp"`
+}
+
+type UpdateMessage struct {
+	NoisyPosition []float64 `json: "noisy_position"`
+	Time          time.Time `json: "timestamp"`
+}
+
+func NewUpdateMessage(m *mat.VecDense) *UpdateMessage {
+	return &UpdateMessage{
+		NoisyPosition: vecToSlice(m),
+		Time:          time.Now(),
+	}
+}
+
+func vecToSlice(m mat.Vector) []float64 {
+	n := m.Len()
+	s := make([]float64, n)
+	for i := 0; i < n; i++ {
+		s[i] = m.AtVec(i)
+	}
+	return s
+}
+
+func denseToSlice(d mat.Matrix) [][]float64 {
+	r, c := d.Dims()
+	m := make([][]float64, r)
+	for i := 0; i < r; i++ {
+		m[i] = make([]float64, c)
+		for j := 0; j < c; j++ {
+			m[i][j] = d.At(i, j)
+		}
+	}
+	return m
+}
+
+func NewMessage(kf *KalmanFilter, s *Screen, t time.Time) *Message {
+	return &Message{
+		EstimatedPosition:   vecToSlice(kf.State.mean.SliceVec(0, 2)),
+		EstimatedCovariance: denseToSlice(kf.State.covariance.SliceSquare(0, 2)),
+		ActualPosition:      vecToSlice(s.Puck.position),
+		Time:                t,
+	}
+}
+
 func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// setup s and kalman filter
 		rand.Seed(time.Now().UTC().UnixNano())
 		s := NewScreen(10, 10)
 		c := make(chan time.Time)
@@ -24,20 +71,24 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 		go s.Run(td, c, bc)
 		initialMeasurement := s.GetNoisyState()
 		kf, err := NewKalmanFilter(initialMeasurement, td)
+		if err != nil {
+			log.Fatal(err)
+		}
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			log.Println(err)
-			return
+			log.Fatal(err)
 		}
 		go func() {
 			for {
 				mt, msg, err := conn.ReadMessage()
 				if err != nil {
-					log.Printf("read error: %s", err)
+					log.Fatalf("read error: %s", err)
 				}
 				if (mt == websocket.TextMessage) &&
 					(string(msg) == "update") {
-					err = kf.Update(s.GetNoisyState())
+					measure := s.GetNoisyState()
+					conn.WriteJSON(NewUpdateMessage(measure))
+					err = kf.Update(measure)
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -45,16 +96,11 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 
 			}
 		}()
-		<-c
+		t := <-c
 		for {
 			time.Sleep(time.Duration(td/.001) * time.Millisecond)
-			m := s.GetNoisyState()
 			xvel := kf.State.mean.AtVec(2)
 			yvel := kf.State.mean.AtVec(3)
-			err = conn.WriteMessage(
-				websocket.TextMessage,
-				[]byte(fmt.Sprintf("Measurement: %+v", m)),
-			)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -67,30 +113,20 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 			uk := mat.NewVecDense(4, make([]float64, 4))
 			select {
 			case b := <-bc:
-				err = conn.WriteMessage(
-					websocket.TextMessage,
-					[]byte(fmt.Sprintf("Bounced %+v", b)),
-				)
 				switch b := b; {
 				case (b == Top) || (b == Bottom):
 					uk.SetVec(1, 1)
 				case (b == Left) || (b == Right):
 					uk.SetVec(0, 1)
 				}
-			case <-c:
+			case t = <-c:
 			}
 			err = kf.Predict(Bk, uk)
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = conn.WriteMessage(
-				websocket.TextMessage,
-				[]byte(fmt.Sprintf("Mean: %+v", kf.State.mean)),
-			)
-			conn.WriteMessage(
-				websocket.TextMessage,
-				[]byte(fmt.Sprintf("Covariance: %+v", kf.State.covariance.SymDense)),
-			)
+			msg := NewMessage(kf, s, t)
+			err = conn.WriteJSON(msg)
 			if err != nil {
 				log.Printf("write: %s", err)
 			}
