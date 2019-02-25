@@ -83,10 +83,6 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = kf.Update(s.GetNoisyState())
-			if err != nil {
-				log.Fatal(err)
-			}
 			err = conn.WriteMessage(
 				websocket.TextMessage,
 				[]byte(fmt.Sprintf("Mean: %+v", kf.State.mean)),
