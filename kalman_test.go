@@ -31,12 +31,11 @@ func TestPredict(t *testing.T) {
 	if kf.prediction == nil {
 		t.Error("prediction is nil")
 	}
-	oldState := *kf.State
 	Bk := mat.NewDense(2, 2, make([]float64, 4))
 	uk := mat.NewVecDense(2, make([]float64, 2))
 	kf.Predict(Bk, uk)
-	if mat.Equal(oldState.mean, kf.State.mean) {
-		t.Error("mean state is still the same")
+	if expected := mat.NewVecDense(2, []float64{5.1, 1.0}); !mat.Equal(expected, state.mean) {
+		t.Errorf("expected: %+v, got: %+v", expected, state.mean)
 	}
 }
 
