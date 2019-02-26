@@ -14,15 +14,15 @@ import (
 var upgrader = websocket.Upgrader{}
 
 type Message struct {
-	EstimatedPosition   []float64   `json: "esimated_position"`
+	EstimatedPosition   []float64   `json:"esimated_position"`
 	EstimatedCovariance [][]float64 `json:"estimated_covariance"`
-	ActualPosition      []float64   `json: "actual_position"`
-	Time                time.Time   `json: "timestamp"`
+	ActualPosition      []float64   `json:"actual_position"`
+	Time                time.Time   `json:"timestamp"`
 }
 
 type UpdateMessage struct {
-	NoisyPosition []float64 `json: "noisy_position"`
-	Time          time.Time `json: "timestamp"`
+	NoisyPosition []float64 `json:"noisy_position"`
+	Time          time.Time `json:"timestamp"`
 }
 
 func NewUpdateMessage(m *mat.VecDense) *UpdateMessage {

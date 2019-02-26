@@ -1,5 +1,5 @@
 // https://www.bzarg.com/p/how-a-kalman-filter-works-in-pictures/
-
+// TODO add mutex to state
 package main
 
 import (
