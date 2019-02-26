@@ -4,6 +4,7 @@ package main
 
 import (
 	"errors"
+	"sync"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -43,6 +44,7 @@ type Sensor struct {
 type State struct {
 	covariance *CovMat       // P_k
 	mean       *mat.VecDense // x_hat_k
+	m          sync.Mutex
 }
 
 type KalmanFilter struct {
@@ -54,6 +56,8 @@ type KalmanFilter struct {
 }
 
 func (k *KalmanFilter) Predict(Bk *mat.Dense, uk *mat.VecDense) error {
+	k.State.m.Lock()
+	defer k.State.m.Unlock() // fatal error: sync: unlock of unlocked mutex
 	n := k.State.mean.Len()
 	x := mat.NewVecDense(n, make([]float64, n))
 	pd := mat.NewDense(n, n, make([]float64, n*n))
@@ -82,21 +86,19 @@ func (k *KalmanFilter) Predict(Bk *mat.Dense, uk *mat.VecDense) error {
 	if err != nil {
 		return err
 	}
-	s := &State{
-		covariance: p,
-		mean:       x,
-	}
+	k.State.covariance = p
+	k.State.mean = x
 	err = p.FromDense(pd)
 	if err != nil {
 		return err
 	}
-	s.covariance = p
-	*k.State = *s
 	return nil
 }
 
 func (k *KalmanFilter) Update(measurement *mat.VecDense) error {
 	// calculate K'
+	k.State.m.Lock()
+	defer k.State.m.Unlock()
 	n := k.State.mean.Len()
 	kg := mat.NewDense(n, n, make([]float64, n*n))
 	kg.Mul(k.stateToSensor, k.State.covariance)
@@ -127,7 +129,9 @@ func (k *KalmanFilter) Update(measurement *mat.VecDense) error {
 		return err
 	}
 
-	k.State = &State{p, x}
+	k.State = &State{
+		covariance: p,
+		mean:       x}
 	return nil
 }
 
