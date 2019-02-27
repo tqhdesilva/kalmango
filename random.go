@@ -18,35 +18,48 @@ func (grvs *GaussianRandomVariable) Sample() float64 {
 }
 
 type MultivariateGaussian struct {
-	covariance *mat.SymDense
+	covariance     *mat.SymDense
+	eigenmatrix    *mat.EigenSym
+	eigenvalues    []float64
+	eigenvectors   *mat.Dense
+	standardNormal *GaussianRandomVariable
+}
+
+func NewMultivariateGaussian(covariance *mat.SymDense) (*MultivariateGaussian, error) {
+	eigenmatrix := &mat.EigenSym{}
+	if !eigenmatrix.Factorize(covariance, true) {
+		return nil, errors.New("factorization of covariance matrix failed")
+	}
+	eigenvalues := eigenmatrix.Values(nil)
+	eigenvectors := &mat.Dense{}
+	eigenvectors.EigenvectorsSym(eigenmatrix)
+	standardNormal := &GaussianRandomVariable{0.0, 1.0}
+	return &MultivariateGaussian{
+		covariance,
+		eigenmatrix,
+		eigenvalues,
+		eigenvectors,
+		standardNormal,
+	}, nil
 }
 
 func (bg *MultivariateGaussian) Sample() (mat.Vector, error) {
 	// see https://stackoverflow.com/questions/6142576/sample-from-multivariate-normal-gaussian-distribution-in-c
 	// see https://en.wikipedia.org/wiki/Multivariate_normal_distribution#Drawing_values_from_the_distribution
-	// TODO we don't need to recalculate the eigenvalues eigenvectors each time
 	rows, columns := bg.covariance.Dims()
 	if rows != columns {
 		return nil, errors.New("covariance matrix is not square")
 	}
-	iidSamples := make([]float64, rows)
-	grv := GaussianRandomVariable{0.0, 1.0}
+	iid := make([]float64, rows)
 	for i := 0; i < rows; i++ {
-		iidSamples[i] = grv.Sample()
+		iid[i] = bg.standardNormal.Sample()
 	}
-	eigenSym := mat.EigenSym{}
-	if !eigenSym.Factorize(bg.covariance, true) {
-		return nil, errors.New("factorization of covariance matrix failed")
-	}
-	q := mat.Dense{}
-	eigenValues := eigenSym.Values(nil)
-	q.EigenvectorsSym(&eigenSym)
 	for i := 0; i < rows; i++ {
-		iidSamples[i] = iidSamples[i] * math.Sqrt(eigenValues[i])
+		iid[i] = iid[i] * math.Sqrt(bg.eigenvalues[i])
 	}
-	iidSamplesVector := mat.NewVecDense(len(iidSamples), iidSamples)
+	iidVector := mat.NewVecDense(len(iid), iid)
 	var r mat.Dense
-	r.Mul(&q, iidSamplesVector)
+	r.Mul(bg.eigenvectors, iidVector)
 	rVector := r.ColView(0)
 	return rVector, nil
 }

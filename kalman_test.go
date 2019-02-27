@@ -12,8 +12,8 @@ func TestPredict(t *testing.T) {
 		&CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
 	}
 	state := &State{
-		&CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
-		mat.NewVecDense(2, []float64{5.0, 1.0}),
+		covariance: &CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
+		mean:       mat.NewVecDense(2, []float64{5.0, 1.0}),
 	}
 	stateToSensor := mat.NewDense(2, 2, []float64{1.0, 0.0, 0.0, 1.0})
 	noise := &CovMat{mat.NewSymDense(2, []float64{0.0, 0.0, 0.0, 0.0})}
@@ -45,8 +45,8 @@ func TestPredictControl(t *testing.T) {
 		&CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
 	}
 	state := &State{
-		&CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
-		mat.NewVecDense(2, []float64{5.0, 1.0}),
+		covariance: &CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
+		mean:       mat.NewVecDense(2, []float64{5.0, 1.0}),
 	}
 	stateToSensor := mat.NewDense(2, 2, []float64{1.0, 0.0, 0.0, 1.0})
 	noise := &CovMat{mat.NewSymDense(2, []float64{0.0, 0.0, 0.0, 0.0})}
@@ -78,8 +78,8 @@ func TestUpdate(t *testing.T) {
 		&CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
 	}
 	state := &State{
-		&CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
-		mat.NewVecDense(2, []float64{5.0, 1.0}),
+		covariance: &CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
+		mean:       mat.NewVecDense(2, []float64{5.0, 1.0}),
 	}
 	stateToSensor := mat.NewDense(2, 2, []float64{1.0, 0.0, 0.0, 1.0})
 	noise := &CovMat{mat.NewSymDense(2, []float64{0.0, 0.0, 0.0, 0.0})}

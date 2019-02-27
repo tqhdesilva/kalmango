@@ -8,7 +8,10 @@ import (
 )
 
 func TestNewScreen(t *testing.T) {
-	screen := NewScreen(10.0, 10.0)
+	screen, err := NewScreen(10.0, 10.0)
+	if err != nil {
+		t.Error(err)
+	}
 	if screen.Puck.position.AtVec(0) > 10.0 ||
 		screen.Puck.position.AtVec(0) < 0 ||
 		screen.Puck.position.AtVec(1) < 0 ||
@@ -19,7 +22,10 @@ func TestNewScreen(t *testing.T) {
 
 func TestRun(t *testing.T) {
 	//sometimes this breaks, race condition
-	screen := NewScreen(10.0, 10.0)
+	screen, err := NewScreen(10.0, 10.0)
+	if err != nil {
+		t.Error(err)
+	}
 	screen.Puck.position.SetVec(0, 5.0)
 	screen.Puck.position.SetVec(1, 5.0)
 	startPosition := screen.Puck.position
@@ -40,7 +46,10 @@ func TestRun(t *testing.T) {
 }
 
 func TestBounce(t *testing.T) {
-	screen := NewScreen(10.0, 10.0)
+	screen, err := NewScreen(10.0, 10.0)
+	if err != nil {
+		t.Error(err)
+	}
 	screen.Puck.position.SetVec(0, 10.5)
 	screen.Puck.position.SetVec(1, 5.0)
 	screen.Puck.velocity.SetVec(0, .1)

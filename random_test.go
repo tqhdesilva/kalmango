@@ -15,7 +15,10 @@ func TestSample(t *testing.T) {
 		{3, mat.NewSymDense(3, []float64{1, 0, .4, .1, 1, 0, 0, 0, 1})},
 	}
 	for _, table := range tables {
-		distribution := MultivariateGaussian{table.covariance}
+		distribution, err := NewMultivariateGaussian(table.covariance)
+		if err != nil {
+			t.Error(err)
+		}
 		result, err := distribution.Sample()
 		if err != nil {
 			t.Error("error in sampling")

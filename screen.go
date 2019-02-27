@@ -51,7 +51,7 @@ func (s *Screen) Run(timeStep float64, c chan time.Time, b chan Edge) {
 }
 
 //NewScreen is a factory for Screen objects
-func NewScreen(height float64, width float64) *Screen {
+func NewScreen(height float64, width float64) (*Screen, error) {
 	s := &Screen{}
 	s.ScreenHeight = height
 	s.ScreenWidth = width
@@ -59,11 +59,19 @@ func NewScreen(height float64, width float64) *Screen {
 	initialYPos := rand.Float64() * height
 	initialPosition := mat.NewVecDense(2, []float64{initialXPos, initialYPos})
 	initialVelocity := mat.NewVecDense(2, []float64{1.0, 1.0})
+	posNoise, err := NewMultivariateGaussian(mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0}))
+	if err != nil {
+		return nil, err
+	}
+	velNoise, err := NewMultivariateGaussian(mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0}))
+	if err != nil {
+		return nil, err
+	}
 	s.Puck = &Puck{
 		initialPosition,
 		initialVelocity,
-		&MultivariateGaussian{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
-		&MultivariateGaussian{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
+		posNoise,
+		velNoise,
 	}
-	return s
+	return s, nil
 }

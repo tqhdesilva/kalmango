@@ -65,7 +65,10 @@ func NewMessage(kf *KalmanFilter, s *Screen, t time.Time) *Message {
 func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rand.Seed(time.Now().UTC().UnixNano())
-		s := NewScreen(10, 10)
+		s, err := NewScreen(10, 10)
+		if err != nil {
+			log.Fatal(err)
+		}
 		c := make(chan time.Time)
 		bc := make(chan Edge)
 		go s.Run(td, c, bc)

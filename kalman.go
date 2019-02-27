@@ -1,5 +1,4 @@
 // https://www.bzarg.com/p/how-a-kalman-filter-works-in-pictures/
-// TODO add mutex to state
 package main
 
 import (
@@ -20,7 +19,6 @@ func NewCovMat(n int, data []float64) (*CovMat, error) {
 }
 
 func (cm *CovMat) FromDense(d *mat.Dense) error {
-	// TODO implement this
 	t := d.T()
 	if !mat.EqualApprox(d, t, .0001) {
 		return errors.New("can't convert non-symmetric Dense matrix to SymDense")
