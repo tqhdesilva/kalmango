@@ -1,3 +1,6 @@
+// TODO solve panic: concurrent write to websocket connection
+// probably add a lock to websocket connection?
+
 package main
 
 import (
@@ -14,7 +17,7 @@ import (
 var upgrader = websocket.Upgrader{}
 
 type Message struct {
-	EstimatedPosition   []float64   `json:"esimated_position"`
+	EstimatedPosition   []float64   `json:"estimated_position"`
 	EstimatedCovariance [][]float64 `json:"estimated_covariance"`
 	ActualPosition      []float64   `json:"actual_position"`
 	Time                time.Time   `json:"timestamp"`
