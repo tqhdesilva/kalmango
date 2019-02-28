@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"sync"
 	"time"
 
 	"gonum.org/v1/gonum/mat"
@@ -26,6 +27,11 @@ type Message struct {
 type UpdateMessage struct {
 	NoisyPosition []float64 `json:"noisy_position"`
 	Time          time.Time `json:"timestamp"`
+}
+
+type Connection struct {
+	connection *websocket.Conn
+	mux        sync.Mutex
 }
 
 func NewUpdateMessage(m *mat.VecDense) *UpdateMessage {
@@ -81,6 +87,7 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 			log.Fatal(err)
 		}
 		conn, err := upgrader.Upgrade(w, r, nil)
+		connl := &Connection{connection: conn}
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -88,12 +95,15 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 			for {
 				mt, msg, err := conn.ReadMessage()
 				if err != nil {
-					log.Fatalf("read error: %s", err)
+					conn.Close()
+					return
 				}
 				if (mt == websocket.TextMessage) &&
 					(string(msg) == "update") {
 					measure := s.GetNoisyState()
-					conn.WriteJSON(NewUpdateMessage(measure))
+					connl.mux.Lock()
+					connl.connection.WriteJSON(NewUpdateMessage(measure))
+					connl.mux.Unlock()
 					err = kf.Update(measure)
 					if err != nil {
 						log.Fatal(err)
@@ -132,10 +142,13 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 				log.Fatal(err)
 			}
 			msg := NewMessage(kf, s, t)
-			err = conn.WriteJSON(msg)
+			connl.mux.Lock()
+			err = connl.connection.WriteJSON(msg)
 			if err != nil {
 				log.Printf("write: %s", err)
+				return
 			}
+			connl.mux.Unlock()
 		}
 	}
 }

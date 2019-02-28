@@ -1,6 +1,7 @@
 var socket = new WebSocket("ws://localhost:8080/websocket")
 var svg = d3.select("#graph").append("svg").attr("height", 500).attr("width", 500)
 var circle = svg.append("circle").attr("cx", 250).attr("cy", 250).attr("fill", "black").attr("r", 10)
+var est_circle = svg.append("circle").attr("cx", 250).attr("cy", 250).attr("fill", "blue").attr("r", 10)
 
 
 var i0 = d3.interpolateHsvLong(d3.hsv(120, 1, 0.65), d3.hsv(60, 1, 0.90)),
@@ -10,10 +11,6 @@ var i0 = d3.interpolateHsvLong(d3.hsv(120, 1, 0.65), d3.hsv(60, 1, 0.90)),
 
 const scale = 50
 var r = 10 * scale, c = 10 * scale;
-
-// var canvas = d3.select("canvas");
-// var context = canvas.node().getContext("2d"),
-//     image = context.createImageData(r, c);
 
 
 function scaler(x){
@@ -60,7 +57,9 @@ var counter = 0;
 socket.addEventListener("message", function(event){
     var d = JSON.parse(event.data)
     if (d["actual_position"] != null) {
-        circle.transition().attr("cx", 50 * d.actual_position[0]).attr("cy", 50 * d.actual_position[1])
+        circle.transition().attr("cx", scale * d.actual_position[0]).attr("cy", scale * d.actual_position[1])
+        est_circle.transition().attr("cx", scale * d.estimated_position[0]).attr("cy", scale * d.estimated_position[1])
+        console.log(d)
         if (counter % 10 == 0){
             var dist = get_probability_distribution(d)
             update_pdf_display(dist)
