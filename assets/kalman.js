@@ -52,6 +52,11 @@ var heatmap = h337.create({
 })
 
 
+function sendMeasureRequest(){
+    socket.send("update")
+    console.log("sent measurement request")
+}
+
 var counter = 0;
 
 socket.addEventListener("message", function(event){
