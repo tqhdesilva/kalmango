@@ -65,7 +65,7 @@ func denseToSlice(d mat.Matrix) [][]float64 {
 func NewMessage(kf *KalmanFilter, s *Screen, t time.Time) *Message {
 	return &Message{
 		EstimatedPosition:   vecToSlice(kf.State.mean.SliceVec(0, 2)),
-		EstimatedCovariance: denseToSlice(kf.State.covariance.SliceSquare(0, 2)),
+		EstimatedCovariance: denseToSlice(kf.State.covariance.SliceSym(0, 2)),
 		ActualPosition:      vecToSlice(s.Puck.position),
 		Time:                t,
 	}
