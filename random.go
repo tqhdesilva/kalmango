@@ -26,7 +26,6 @@ type MultivariateGaussian struct {
 }
 
 func NewMultivariateGaussian(covariance *mat.SymDense) (*MultivariateGaussian, error) {
-	// TODO remove comments
 	eigenmatrix := &mat.EigenSym{}
 	if !eigenmatrix.Factorize(covariance, true) {
 		return nil, errors.New("factorization of covariance matrix failed")
@@ -34,7 +33,6 @@ func NewMultivariateGaussian(covariance *mat.SymDense) (*MultivariateGaussian, e
 	eigenvalues := eigenmatrix.Values(nil)
 	eigenvectors := &mat.Dense{}
 	eigenmatrix.VectorsTo(eigenvectors)
-	// eigenvectors.EigenvectorsSym(eigenmatrix)
 	standardNormal := &GaussianRandomVariable{0.0, 1.0}
 	return &MultivariateGaussian{
 		covariance,
