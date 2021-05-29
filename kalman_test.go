@@ -92,10 +92,10 @@ func TestUpdate(t *testing.T) {
 		prediction,
 	}
 	measurement := mat.NewVecDense(2, []float64{4.0, 1.3})
-	oldState := *kf.State
+	oldMean := kf.State.mean
 	kf.Update(measurement)
 
-	if mat.Equal(oldState.mean, kf.State.mean) {
+	if mat.Equal(oldMean, kf.State.mean) {
 		t.Error("mean state is still the same")
 	}
 }
