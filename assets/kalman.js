@@ -6,32 +6,31 @@ var est_circle = svg.append("circle").attr("cx", 250).attr("cy", 250).attr("fill
 
 var i0 = d3.interpolateHsvLong(d3.hsv(120, 1, 0.65), d3.hsv(60, 1, 0.90)),
     i1 = d3.interpolateHsvLong(d3.hsv(60, 1, 0.90), d3.hsv(0, 0, 0.95)),
-    interpolateTerrain = function(t) { return t < 0.5 ? i0(t * 2) : i1((t - 0.5) * 2); },
+    interpolateTerrain = function (t) { return t < 0.5 ? i0(t * 2) : i1((t - 0.5) * 2); },
     color = d3.scaleSequential(interpolateTerrain).domain([90, 190]);
 
 const scale = 50
 var r = 10 * scale, c = 10 * scale;
 
 
-function scaler(x){
+function scaler(x) {
     return x * scale
 }
 
-function get_probability_distribution(event_data){
+function get_probability_distribution(event_data) {
     dist_parameters = {
-        sigma: event_data.estimated_covariance.map(function(x){ return x.map(scaler)}),
+        sigma: event_data.estimated_covariance.map(function (x) { return x.map(scaler) }),
         mu: event_data.estimated_position.map(scaler)
     }
     var distribution = new Gaussian(dist_parameters);
     return distribution
 }
 
-
-function update_pdf_display(dist){
+function update_pdf_display(dist) {
     var data = []
-    for(var i = 0, k = 0; i < r; i += scale) {
-        for(var j = 0; j < c; j += scale, k += 4){
-            var p = dist.density([i, j])
+    for (var i = 0; i <= r; i += scale) {
+        for (var j = 0; j <= c; j += scale) {
+            var p = - Math.log(dist.density([i, j]))
             data.push({
                 x: i,
                 y: j,
@@ -40,7 +39,8 @@ function update_pdf_display(dist){
         }
     }
     heatmap.setData({
-        max: 1,
+        min: 1,
+        max: 1000,
         data: data
     })
 }
@@ -52,24 +52,23 @@ var heatmap = h337.create({
 })
 
 
-function sendMeasureRequest(){
+function sendMeasureRequest() {
     socket.send("update")
     console.log("sent measurement request")
 }
 
 var counter = 0;
 
-socket.addEventListener("message", function(event){
+socket.addEventListener("message", function (event) {
     var d = JSON.parse(event.data)
     if (d["actual_position"] != null) {
         circle.transition().attr("cx", scale * d.actual_position[0]).attr("cy", scale * d.actual_position[1])
         est_circle.transition().attr("cx", scale * d.estimated_position[0]).attr("cy", scale * d.estimated_position[1])
-        console.log(d)
-        if (counter % 10 == 0){
+        // console.log(d)
+        if (counter % 10 == 0) {
             var dist = get_probability_distribution(d)
             update_pdf_display(dist)
         }
         counter += 1;
     }
 })
-// socket.send("data")
