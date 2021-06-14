@@ -1,6 +1,3 @@
-// TODO solve panic: concurrent write to websocket connection
-// probably add a lock to websocket connection?
-
 package main
 
 import (
@@ -150,6 +147,7 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			// TODO make a function for this and defer the unlock
 			msg := NewMessage(kf, s, t)
 			connl.mux.Lock()
 			err = connl.connection.WriteJSON(msg)
