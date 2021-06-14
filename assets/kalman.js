@@ -64,7 +64,6 @@ socket.addEventListener("message", function (event) {
     if (d["actual_position"] != null) {
         circle.transition().attr("cx", scale * d.actual_position[0]).attr("cy", scale * d.actual_position[1])
         est_circle.transition().attr("cx", scale * d.estimated_position[0]).attr("cy", scale * d.estimated_position[1])
-        // console.log(d)
         if (counter % 10 == 0) {
             var dist = get_probability_distribution(d)
             update_pdf_display(dist)
