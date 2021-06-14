@@ -34,8 +34,8 @@ type Connection struct {
 	mux        sync.Mutex
 }
 
-func NewUpdateMessage(m *mat.VecDense) *UpdateMessage {
-	return &UpdateMessage{
+func NewUpdateMessage(m *mat.VecDense) UpdateMessage {
+	return UpdateMessage{
 		NoisyPosition: vecToSlice(m),
 		Time:          time.Now(),
 	}
@@ -71,6 +71,15 @@ func NewMessage(kf *KalmanFilter, s *Screen, t time.Time) *Message {
 	}
 }
 
+func SendUpdate(u UpdateMessage, conn *Connection) error {
+	conn.mux.Lock()
+	defer conn.mux.Unlock()
+	if err := conn.connection.WriteJSON(u); err != nil {
+		return err
+	}
+	return nil
+}
+
 func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rand.Seed(time.Now().UTC().UnixNano())
@@ -101,11 +110,11 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 				if (mt == websocket.TextMessage) &&
 					(string(msg) == "update") {
 					measure := s.GetNoisyState()
-					connl.mux.Lock()
-					connl.connection.WriteJSON(NewUpdateMessage(measure))
-					connl.mux.Unlock()
-					err = kf.Update(measure)
-					if err != nil {
+					um := NewUpdateMessage(measure)
+					if err := SendUpdate(um, connl); err != nil {
+						log.Fatal(err)
+					}
+					if err := kf.Update(measure); err != nil {
 						log.Fatal(err)
 					}
 				}
