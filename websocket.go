@@ -33,6 +33,12 @@ type Connection struct {
 	mux        sync.Mutex
 }
 
+func (c *Connection) ReadMessage() (messageType int, p []byte, err error) {
+	c.mux.Lock()
+	defer c.mux.Unlock()
+	return c.connection.ReadMessage()
+}
+
 func NewUpdateMessage(m *mat.VecDense) UpdateMessage {
 	return UpdateMessage{
 		NoisyPosition: vecToSlice(m),
@@ -95,22 +101,23 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 			log.Fatal(err)
 		}
 		conn, err := upgrader.Upgrade(w, r, nil)
-		connl := &Connection{connection: conn}
+		readconn := &Connection{connection: conn}
+		writeconn := &Connection{connection: conn}
 		if err != nil {
 			log.Fatal(err)
 		}
 		go func() {
+			defer conn.Close()
 			for {
-				mt, msg, err := conn.ReadMessage()
+				mt, msg, err := readconn.ReadMessage()
 				if err != nil {
-					conn.Close()
 					return
 				}
 				if (mt == websocket.TextMessage) &&
 					(string(msg) == "update") {
 					measure := s.GetNoisyState()
 					um := NewUpdateMessage(measure)
-					if err := SendMessage(um, connl); err != nil {
+					if err := SendMessage(um, writeconn); err != nil {
 						log.Fatal(err)
 					}
 					if err := kf.Update(measure); err != nil {
@@ -150,11 +157,9 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 				log.Fatal(err)
 			}
 			msg := NewStateMessage(kf, s, t)
-			if err := SendMessage(msg, connl); err != nil {
+			if err := SendMessage(msg, writeconn); err != nil {
 				log.Fatal(err)
 			}
 		}
 	}
 }
-
-// TODO handle socket.close()
