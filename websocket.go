@@ -14,7 +14,9 @@ import (
 
 var upgrader = websocket.Upgrader{}
 
-type Message struct {
+type Message interface{}
+
+type StateMessage struct {
 	EstimatedPosition   []float64   `json:"estimated_position"`
 	EstimatedCovariance [][]float64 `json:"estimated_covariance"`
 	ActualPosition      []float64   `json:"actual_position"`
@@ -59,8 +61,8 @@ func denseToSlice(d mat.Matrix) [][]float64 {
 	return m
 }
 
-func NewMessage(kf *KalmanFilter, s *Screen, t time.Time) *Message {
-	return &Message{
+func NewStateMessage(kf *KalmanFilter, s *Screen, t time.Time) StateMessage {
+	return StateMessage{
 		EstimatedPosition:   vecToSlice(kf.State.mean.SliceVec(0, 2)),
 		EstimatedCovariance: denseToSlice(kf.State.covariance.SliceSym(0, 2)),
 		ActualPosition:      vecToSlice(s.Puck.position),
@@ -68,10 +70,10 @@ func NewMessage(kf *KalmanFilter, s *Screen, t time.Time) *Message {
 	}
 }
 
-func SendUpdate(u UpdateMessage, conn *Connection) error {
+func SendMessage(m Message, conn *Connection) error {
 	conn.mux.Lock()
 	defer conn.mux.Unlock()
-	if err := conn.connection.WriteJSON(u); err != nil {
+	if err := conn.connection.WriteJSON(m); err != nil {
 		return err
 	}
 	return nil
@@ -108,7 +110,7 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 					(string(msg) == "update") {
 					measure := s.GetNoisyState()
 					um := NewUpdateMessage(measure)
-					if err := SendUpdate(um, connl); err != nil {
+					if err := SendMessage(um, connl); err != nil {
 						log.Fatal(err)
 					}
 					if err := kf.Update(measure); err != nil {
@@ -143,19 +145,14 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 				}
 			case t = <-c:
 			}
-			err = kf.Predict(Bk, uk)
-			if err != nil {
+
+			if err = kf.Predict(Bk, uk); err != nil {
 				log.Fatal(err)
 			}
-			// TODO make a function for this and defer the unlock
-			msg := NewMessage(kf, s, t)
-			connl.mux.Lock()
-			err = connl.connection.WriteJSON(msg)
-			if err != nil {
-				log.Printf("write: %s", err)
-				return
+			msg := NewStateMessage(kf, s, t)
+			if err := SendMessage(msg, connl); err != nil {
+				log.Fatal(err)
 			}
-			connl.mux.Unlock()
 		}
 	}
 }
