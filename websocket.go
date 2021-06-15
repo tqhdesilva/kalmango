@@ -90,7 +90,7 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 		rand.Seed(time.Now().UTC().UnixNano())
 		s, err := NewScreen(10, 10)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 		}
 		c := make(chan time.Time)
 		bc := make(chan Edge)
@@ -98,19 +98,20 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 		initialMeasurement := s.GetNoisyState()
 		kf, err := NewKalmanFilter(initialMeasurement, td)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 		}
 		conn, err := upgrader.Upgrade(w, r, nil)
 		readconn := &Connection{connection: conn}
 		writeconn := &Connection{connection: conn}
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 		}
 		go func() {
 			defer conn.Close()
 			for {
 				mt, msg, err := readconn.ReadMessage()
 				if err != nil {
+					log.Print(err)
 					return
 				}
 				if (mt == websocket.TextMessage) &&
@@ -118,10 +119,12 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 					measure := s.GetNoisyState()
 					um := NewUpdateMessage(measure)
 					if err := SendMessage(um, writeconn); err != nil {
-						log.Fatal(err)
+						log.Print(err)
+						return
 					}
 					if err := kf.Update(measure); err != nil {
-						log.Fatal(err)
+						log.Print(err)
+						return
 					}
 				}
 
@@ -139,7 +142,8 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 			xvel := kf.State.mean.AtVec(2)
 			yvel := kf.State.mean.AtVec(3)
 			if err != nil {
-				log.Fatal(err)
+				log.Print(err)
+				return
 			}
 			uk := mat.NewVecDense(4, make([]float64, 4))
 			select {
@@ -154,11 +158,13 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 			}
 
 			if err = kf.Predict(Bk, uk); err != nil {
-				log.Fatal(err)
+				log.Print(err)
+				return
 			}
 			msg := NewStateMessage(kf, s, t)
 			if err := SendMessage(msg, writeconn); err != nil {
-				log.Fatal(err)
+				log.Print(err)
+				return
 			}
 		}
 	}
