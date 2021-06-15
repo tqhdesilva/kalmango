@@ -128,6 +128,12 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 			}
 		}()
 		t := <-c
+		Bk := mat.NewDense(4, 4, []float64{
+			0, 0, 0, 0,
+			0, 0, 0, 0,
+			0, 0, -2, 0,
+			0, 0, 0, -2,
+		})
 		for {
 			time.Sleep(time.Duration(td/.001) * time.Millisecond)
 			xvel := kf.State.mean.AtVec(2)
@@ -135,20 +141,14 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			Bk := mat.NewDense(4, 4, []float64{
-				0, 0, 0, 0,
-				0, 0, 0, 0,
-				-2 * xvel, 0, 0, 0,
-				0, -2 * yvel, 0, 0,
-			})
 			uk := mat.NewVecDense(4, make([]float64, 4))
 			select {
 			case b := <-bc:
 				switch b := b; {
 				case (b == Top) || (b == Bottom):
-					uk.SetVec(1, 1)
+					uk.SetVec(3, yvel)
 				case (b == Left) || (b == Right):
-					uk.SetVec(0, 1)
+					uk.SetVec(2, xvel)
 				}
 			case t = <-c:
 			}
