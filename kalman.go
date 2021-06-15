@@ -113,7 +113,7 @@ func (k *KalmanFilter) Update(measurement *mat.VecDense) error {
 	x.MulVec(kg, x)
 	x.AddVec(k.State.mean, x)
 
-	// calculate p_k
+	// calculate p'_k
 	pd := mat.NewDense(n, n, make([]float64, n*n))
 	pd.Mul(k.stateToSensor, k.State.covariance)
 	pd.Mul(kg, pd)

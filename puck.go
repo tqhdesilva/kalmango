@@ -51,14 +51,14 @@ func (p *Puck) GetNoisyPosition() mat.VecDense {
 }
 
 func (p *Puck) GetNoisyVelocity() mat.VecDense {
-	n := p.position.Len()
+	n := p.velocity.Len()
 	noise, err := p.velocityNoise.Sample()
 	if err != nil {
 		log.Fatal("error generating position noise")
 	}
-	pos := mat.NewVecDense(n, make([]float64, n))
-	pos.AddVec(p.velocity, noise)
-	return *pos
+	vel := mat.NewVecDense(n, make([]float64, n))
+	vel.AddVec(p.velocity, noise)
+	return *vel
 }
 
 func (p *Puck) GetNoisyState() *mat.VecDense {
