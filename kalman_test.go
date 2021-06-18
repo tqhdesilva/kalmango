@@ -8,16 +8,16 @@ import (
 
 func TestPredict(t *testing.T) {
 	const timeDelta float64 = .1
-	sensor := &Sensor{
-		&CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
+	sensor := Sensor{
+		CovMat{*mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
 	}
 	state := &State{
-		covariance: &CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
-		mean:       mat.NewVecDense(2, []float64{5.0, 1.0}),
+		covariance: CovMat{*mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
+		mean:       *mat.NewVecDense(2, []float64{5.0, 1.0}),
 	}
-	stateToSensor := mat.NewDense(2, 2, []float64{1.0, 0.0, 0.0, 1.0})
-	noise := &CovMat{mat.NewSymDense(2, []float64{0.0, 0.0, 0.0, 0.0})}
-	prediction := mat.NewDense(2, 2, []float64{1.0, timeDelta, 0.0, 1.0})
+	stateToSensor := *mat.NewDense(2, 2, []float64{1.0, 0.0, 0.0, 1.0})
+	noise := CovMat{*mat.NewSymDense(2, []float64{0.0, 0.0, 0.0, 0.0})}
+	prediction := *mat.NewDense(2, 2, []float64{1.0, timeDelta, 0.0, 1.0})
 	kf := &KalmanFilter{
 		sensor,
 		state,
@@ -25,32 +25,32 @@ func TestPredict(t *testing.T) {
 		noise,
 		prediction,
 	}
-	if kf.State == nil {
+	if &kf.State == nil {
 		t.Error("state is nil")
 	}
-	if kf.prediction == nil {
+	if &kf.prediction == nil {
 		t.Error("prediction is nil")
 	}
 	Bk := mat.NewDense(2, 2, make([]float64, 4))
 	uk := mat.NewVecDense(2, make([]float64, 2))
 	kf.Predict(Bk, uk)
-	if expected := mat.NewVecDense(2, []float64{5.1, 1.0}); !mat.Equal(expected, state.mean) {
+	if expected := mat.NewVecDense(2, []float64{5.1, 1.0}); !mat.Equal(expected, &state.mean) {
 		t.Errorf("expected: %+v, got: %+v", expected, state.mean)
 	}
 }
 
 func TestPredictControl(t *testing.T) {
 	const timeDelta float64 = .1
-	sensor := &Sensor{
-		&CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
+	sensor := Sensor{
+		CovMat{*mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
 	}
 	state := &State{
-		covariance: &CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
-		mean:       mat.NewVecDense(2, []float64{5.0, 1.0}),
+		covariance: CovMat{*mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
+		mean:       *mat.NewVecDense(2, []float64{5.0, 1.0}),
 	}
-	stateToSensor := mat.NewDense(2, 2, []float64{1.0, 0.0, 0.0, 1.0})
-	noise := &CovMat{mat.NewSymDense(2, []float64{0.0, 0.0, 0.0, 0.0})}
-	prediction := mat.NewDense(2, 2, []float64{1.0, timeDelta, 0.0, 1.0})
+	stateToSensor := *mat.NewDense(2, 2, []float64{1.0, 0.0, 0.0, 1.0})
+	noise := CovMat{*mat.NewSymDense(2, []float64{0.0, 0.0, 0.0, 0.0})}
+	prediction := *mat.NewDense(2, 2, []float64{1.0, timeDelta, 0.0, 1.0})
 	kf := &KalmanFilter{
 		sensor,
 		state,
@@ -58,32 +58,32 @@ func TestPredictControl(t *testing.T) {
 		noise,
 		prediction,
 	}
-	if kf.State == nil {
+	if &kf.State == nil {
 		t.Error("state is nil")
 	}
-	if kf.prediction == nil {
+	if &kf.prediction == nil {
 		t.Error("prediction is nil")
 	}
 	Bk := mat.NewDense(2, 2, []float64{0, 0, 0, -2 * state.mean.AtVec(1)})
 	uk := mat.NewVecDense(2, []float64{0, 1})
 	kf.Predict(Bk, uk)
-	if expected := mat.NewVecDense(2, []float64{5.1, -1.0}); !mat.Equal(expected, state.mean) {
+	if expected := mat.NewVecDense(2, []float64{5.1, -1.0}); !mat.Equal(expected, &state.mean) {
 		t.Errorf("expected: %+v, got: %+v", expected, state.mean)
 	}
 }
 
 func TestUpdate(t *testing.T) {
 	const timeDelta float64 = .1
-	sensor := &Sensor{
-		&CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
+	sensor := Sensor{
+		CovMat{*mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
 	}
 	state := &State{
-		covariance: &CovMat{mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
-		mean:       mat.NewVecDense(2, []float64{5.0, 1.0}),
+		covariance: CovMat{*mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0})},
+		mean:       *mat.NewVecDense(2, []float64{5.0, 1.0}),
 	}
-	stateToSensor := mat.NewDense(2, 2, []float64{1.0, 0.0, 0.0, 1.0})
-	noise := &CovMat{mat.NewSymDense(2, []float64{0.0, 0.0, 0.0, 0.0})}
-	prediction := mat.NewDense(2, 2, []float64{1.0, timeDelta, 0.0, 1.0})
+	stateToSensor := *mat.NewDense(2, 2, []float64{1.0, 0.0, 0.0, 1.0})
+	noise := CovMat{*mat.NewSymDense(2, []float64{0.0, 0.0, 0.0, 0.0})}
+	prediction := *mat.NewDense(2, 2, []float64{1.0, timeDelta, 0.0, 1.0})
 	kf := &KalmanFilter{
 		sensor,
 		state,
@@ -95,7 +95,7 @@ func TestUpdate(t *testing.T) {
 	oldMean := kf.State.mean
 	kf.Update(measurement)
 
-	if mat.Equal(oldMean, kf.State.mean) {
+	if mat.Equal(&oldMean, &kf.State.mean) {
 		t.Error("mean state is still the same")
 	}
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"math/rand"
 	"time"
 
@@ -51,7 +52,10 @@ func (s *Screen) Run(timeStep float64, c chan time.Time, b chan Edge) {
 }
 
 //NewScreen is a factory for Screen objects
-func NewScreen(height float64, width float64) (*Screen, error) {
+func NewScreen(height float64, width float64, posCov *CovMat, velCov *CovMat) (*Screen, error) {
+	if !matchShape(2, posCov) || !matchShape(2, velCov) {
+		return nil, errors.New("Covariance matrices should be 2x2 matrices.")
+	}
 	s := &Screen{}
 	s.ScreenHeight = height
 	s.ScreenWidth = width
@@ -59,11 +63,11 @@ func NewScreen(height float64, width float64) (*Screen, error) {
 	initialYPos := rand.Float64() * height
 	initialPosition := mat.NewVecDense(2, []float64{initialXPos, initialYPos})
 	initialVelocity := mat.NewVecDense(2, []float64{1.0, 1.0})
-	posNoise, err := NewMultivariateGaussian(mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0}))
+	posNoise, err := NewMultivariateGaussian(&posCov.SymDense)
 	if err != nil {
 		return nil, err
 	}
-	velNoise, err := NewMultivariateGaussian(mat.NewSymDense(2, []float64{1.0, 0.0, 0.0, 1.0}))
+	velNoise, err := NewMultivariateGaussian(&velCov.SymDense)
 	if err != nil {
 		return nil, err
 	}

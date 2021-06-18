@@ -88,23 +88,73 @@ func SendMessage(m Message, conn *Connection) error {
 func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rand.Seed(time.Now().UTC().UnixNano())
-		s, err := NewScreen(10, 10)
+		H := mat.NewDense(4, 4, []float64{
+			1.0, 0.0, 0.0, 0.0,
+			0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 1.0, 0.0,
+			0.0, 0.0, 0.0, 1.0,
+		})
+		Q, err := NewCovMat(4, []float64{
+			0.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 0.0,
+		})
 		if err != nil {
 			log.Println(err)
+			http.Error(w, err.Error(), 500)
+		}
+		R, err := NewCovMat(4, []float64{
+			1.0, 0.0, 0.0, 0.0,
+			0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 0.1, 0.0,
+			0.0, 0.0, 0.0, 0.1,
+		})
+		if err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), 500)
+		}
+		posCov, err := NewCovMat(2, nil)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), 500)
+		}
+		velCov, err := NewCovMat(2, nil)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), 500)
+		}
+		posCov.CopySym(R.SliceSym(0, 2))
+		velCov.CopySym(R.SliceSym(2, 4))
+		F := mat.NewDense(4, 4, []float64{
+			1.0, 0.0, td, 0.0,
+			0.0, 1.0, 0.0, td,
+			0.0, 0.0, 1.0, 0.0,
+			0.0, 0.0, 0.0, 1.0,
+		})
+		s, err := NewScreen(10, 10, posCov, velCov)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), 500)
+			return
 		}
 		c := make(chan time.Time)
 		bc := make(chan Edge)
 		go s.Run(td, c, bc)
 		initialMeasurement := s.GetNoisyState()
-		kf, err := NewKalmanFilter(initialMeasurement, td)
+		kf, err := NewKalmanFilter(initialMeasurement, H, Q, R, F, td)
 		if err != nil {
 			log.Println(err)
+			http.Error(w, err.Error(), 500)
+			return
 		}
 		conn, err := upgrader.Upgrade(w, r, nil)
 		readconn := &Connection{connection: conn}
 		writeconn := &Connection{connection: conn}
 		if err != nil {
 			log.Println(err)
+			http.Error(w, err.Error(), 500)
+			return
 		}
 		go func() {
 			defer conn.Close()

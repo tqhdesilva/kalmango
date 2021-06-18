@@ -8,7 +8,18 @@ import (
 )
 
 func TestNewScreen(t *testing.T) {
-	screen, err := NewScreen(10.0, 10.0)
+	posCov, err := NewCovMat(2, []float64{
+		1.0, 0.0,
+		0.0, 1.0,
+	})
+	velCov, err := NewCovMat(2, []float64{
+		0.2, 0.0,
+		0.0, 0.2,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	screen, err := NewScreen(10.0, 10.0, posCov, velCov)
 	if err != nil {
 		t.Error(err)
 	}
@@ -21,8 +32,16 @@ func TestNewScreen(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
-	//sometimes this breaks, race condition
-	screen, err := NewScreen(10.0, 10.0)
+	// TODO sometimes this breaks, race condition
+	posCov, err := NewCovMat(2, []float64{
+		1.0, 0.0,
+		0.0, 1.0,
+	})
+	velCov, err := NewCovMat(2, []float64{
+		0.2, 0.0,
+		0.0, 0.2,
+	})
+	screen, err := NewScreen(10.0, 10.0, posCov, velCov)
 	if err != nil {
 		t.Error(err)
 	}
@@ -46,7 +65,15 @@ func TestRun(t *testing.T) {
 }
 
 func TestBounce(t *testing.T) {
-	screen, err := NewScreen(10.0, 10.0)
+	posCov, err := NewCovMat(2, []float64{
+		1.0, 0.0,
+		0.0, 1.0,
+	})
+	velCov, err := NewCovMat(2, []float64{
+		0.2, 0.0,
+		0.0, 0.2,
+	})
+	screen, err := NewScreen(10.0, 10.0, posCov, velCov)
 	if err != nil {
 		t.Error(err)
 	}
