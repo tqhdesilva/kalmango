@@ -1,7 +1,7 @@
 Kalman filter in go.
 
 # Run
-`go run .`
+`go run ./cmd/api`
 
 Then go to `http://localhost:8080` in your browser.
 The black circle is the ground truth location of the puck, and the blue circle is the point estimate of the position.

@@ -1,4 +1,4 @@
-var socket = new WebSocket("ws://localhost:8080/websocket")
+var socket = new WebSocket(`ws://${location.hostname}:8080/websocket`)
 var svg = d3.select("#graph").append("svg").attr("height", 500).attr("width", 500)
 var circle = svg.append("circle").attr("cx", 250).attr("cy", 250).attr("fill", "black").attr("r", 10)
 var est_circle = svg.append("circle").attr("cx", 250).attr("cy", 250).attr("fill", "blue").attr("r", 10)
