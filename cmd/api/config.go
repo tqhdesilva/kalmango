@@ -6,9 +6,9 @@ import (
 )
 
 type Config struct {
-	SSL       bool
-	Assets    string
-	TimeDelta float64
+	SSL       bool    `json:"ssl"`
+	Assets    string  `json:"assets"`
+	TimeDelta float64 `json:"time_delta"`
 }
 
 func LoadConfig(path string) (*Config, error) {
@@ -16,7 +16,7 @@ func LoadConfig(path string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	var config *Config
+	config := &Config{}
 	json.Unmarshal(data, config)
 	return config, nil
 }
