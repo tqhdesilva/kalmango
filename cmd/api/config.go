@@ -1,30 +1,24 @@
 package main
 
 import (
-	"encoding/json"
-	"io/ioutil"
+	"github.com/spf13/viper"
 )
 
+// API_SSL, API_ASSETS, API_TIME_DELTA
 type Config struct {
 	SSL       bool    `json:"ssl"`
 	Assets    string  `json:"assets"`
 	TimeDelta float64 `json:"time_delta"`
 }
 
-func LoadConfig(path string) (*Config, error) {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	config := &Config{}
-	json.Unmarshal(data, config)
-	return config, nil
-}
-
-func DefaultConfig() *Config {
-	return &Config{
-		SSL:       false,
-		Assets:    "./assets",
-		TimeDelta: 0.1,
-	}
+func LoadConfig() Config {
+	viper.SetEnvPrefix("API")
+	viper.SetDefault("SSL", false)
+	viper.SetDefault("ASSETS", "./assets")
+	viper.SetDefault("TIME_DELTA", 0.1)
+	viper.AutomaticEnv()
+	ssl := viper.GetBool("SSL")
+	assets := viper.GetString("ASSETS")
+	timeDelta := viper.GetFloat64("TIME_DELTA")
+	return Config{ssl, assets, timeDelta}
 }
