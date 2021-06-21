@@ -1,4 +1,4 @@
-var socket = new WebSocket(`${isHTTPS() ? 'wss' : 'ws'}://${location.hostname}${getPort()}/websocket`)
+var socket = new WebSocket(`${isHTTPS() ? 'wss' : 'ws'}://${window.location.host}/websocket`)
 var svg = d3.select("#graph").append("svg").attr("height", 500).attr("width", 500)
 var circle = svg.append("circle").attr("cx", 250).attr("cy", 250).attr("fill", "black").attr("r", 10)
 var est_circle = svg.append("circle").attr("cx", 250).attr("cy", 250).attr("fill", "blue").attr("r", 10)
@@ -15,10 +15,6 @@ var r = 10 * scale, c = 10 * scale;
 
 function isHTTPS() {
     return window.location.protocol == "https:"
-}
-
-function getPort() {
-    return window.location.port ? `:${window.location.port}` : ""
 }
 
 function scaler(x) {
