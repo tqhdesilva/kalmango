@@ -157,6 +157,7 @@ func MakeHandler(td float64) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 		go func() {
+			defer conn.WriteMessage(websocket.CloseMessage, []byte{})
 			defer conn.Close()
 			for {
 				mt, msg, err := readconn.ReadMessage()

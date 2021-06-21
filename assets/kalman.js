@@ -1,4 +1,4 @@
-var socket = new WebSocket(`ws://${location.hostname}:8080/websocket`)
+var socket = new WebSocket(`${isHTTPS() ? 'wss' : 'ws'}://${location.hostname}:8080/websocket`)
 var svg = d3.select("#graph").append("svg").attr("height", 500).attr("width", 500)
 var circle = svg.append("circle").attr("cx", 250).attr("cy", 250).attr("fill", "black").attr("r", 10)
 var est_circle = svg.append("circle").attr("cx", 250).attr("cy", 250).attr("fill", "blue").attr("r", 10)
@@ -13,11 +13,15 @@ const scale = 50
 var r = 10 * scale, c = 10 * scale;
 
 
+function isHTTPS() {
+    return window.location.protocol == "https:"
+}
+
 function scaler(x) {
     return x * scale
 }
 
-function get_probability_distribution(event_data) {
+function getProbabilityDistribution(event_data) {
     dist_parameters = {
         sigma: event_data.estimated_covariance.map(function (x) { return x.map(scaler) }),
         mu: event_data.estimated_position.map(scaler)
@@ -26,7 +30,7 @@ function get_probability_distribution(event_data) {
     return distribution
 }
 
-function update_pdf_display(dist) {
+function updatePDFDisplay(dist) {
     var data = []
     for (var i = 0; i <= r; i += scale) {
         for (var j = 0; j <= c; j += scale) {
@@ -65,8 +69,8 @@ socket.addEventListener("message", function (event) {
         circle.transition().attr("cx", scale * d.actual_position[0]).attr("cy", scale * d.actual_position[1])
         est_circle.transition().attr("cx", scale * d.estimated_position[0]).attr("cy", scale * d.estimated_position[1])
         if (counter % 10 == 0) {
-            var dist = get_probability_distribution(d)
-            update_pdf_display(dist)
+            var dist = getProbabilityDistribution(d)
+            updatePDFDisplay(dist)
         }
         counter += 1;
     }
