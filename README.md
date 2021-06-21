@@ -1,4 +1,4 @@
-Kalman filter in go.
+[Kalman filter in go](https://kalmango.herokuapp.com/).
 
 # Run
 `go run ./cmd/api`
