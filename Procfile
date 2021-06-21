@@ -1,1 +1,1 @@
-web: bin/kalmango
+web: bin/api
