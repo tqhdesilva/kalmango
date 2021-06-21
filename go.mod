@@ -7,3 +7,5 @@ require (
 	github.com/spf13/viper v1.8.0 // indirect
 	gonum.org/v1/gonum v0.9.1 // indirect
 )
+
+// +heroku install ./cmd/api
