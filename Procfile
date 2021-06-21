@@ -1,1 +1,1 @@
-web: bin/api
+web: API_PORT=$PORT bin/api
